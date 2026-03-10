@@ -77,7 +77,7 @@
         </div>
         <div class="flex items-center gap-2 sm:gap-3">
             <div class="text-[10px] font-bold text-brand bg-brand/10 px-2 py-1 rounded-lg border border-brand/20 shadow-sm tracking-wide hidden sm:block">
-                by 에이미 v1.17
+                by 에이미 v1.18
             </div>
             <button onclick="openDataManagementModal()" class="w-8 h-8 rounded-full bg-cardBg flex items-center justify-center text-slate-400 hover:text-white hover:bg-cardBgLight transition-colors shadow-sm" title="데이터 백업/복원">
                 <i class="fas fa-database text-xs"></i>
@@ -366,7 +366,7 @@
         </div>
     </div>
 
-    <!-- [모달] 수동 배당금 업데이트 (오버플로우 방지 적용) -->
+    <!-- [모달] 수동 배당금 업데이트 -->
     <div id="modal-manual-update" class="fixed inset-0 z-[70] hidden bg-bgMain/90 backdrop-blur-sm flex items-center justify-center px-4">
         <div class="bg-cardBg rounded-[28px] w-full max-w-sm p-6 sm:p-7 border border-slate-700 shadow-2xl mx-auto">
             <h3 class="text-xl font-bold mb-2 text-white text-center">API 수동 업데이트</h3>
@@ -867,25 +867,57 @@
                 return;
             }
 
-            const maxDiv = Math.max(...history);
+            // 시각적 우상향 극대화를 위한 기준점 계산 로직 (v1.18 핵심 업데이트)
             const nonZeroHistory = history.filter(v => v > 0);
             const minDiv = nonZeroHistory.length > 0 ? Math.min(...nonZeroHistory) : 0; 
+            const maxDiv = Math.max(...history);
             const divDiff = maxDiv - minDiv;
             
             let chartHTML = '';
-            const calcHeight = (val) => {
-                if (val <= 0) return 2; 
-                if (divDiff <= 0) return 40; 
-                
-                const normalized = (val - minDiv) / divDiff;
-                const exaggerated = Math.pow(normalized, 2.5);
-                
-                return 15 + (exaggerated * 85);
-            };
+            let previousVal = 0;
+            let previousHeight = 10;
 
             history.forEach((div, index) => {
                 const m = index + 1;
-                const h = calcHeight(div);
+                let h = 0;
+                
+                if (div <= 0) {
+                    h = 2;
+                } else if (divDiff <= 0) {
+                    h = 40;
+                } else {
+                    let norm = (div - minDiv) / divDiff;
+                    let timeNorm = index / 11; // 0 to 1
+                    
+                    // 혼합 렌더링 알고리즘: 미세한 차이라도 시원한 우상향 계단식으로 표현되도록 시간 가중치 혼합
+                    let combinedNorm;
+                    if (m >= currentMonth) {
+                        // 미래 구간(스노우볼): 시간이 흐름에 따른 우상향 경사를 강제하여 확실한 시각적 피드백 제공
+                        combinedNorm = (norm * 0.3) + (timeNorm * 0.7);
+                    } else {
+                        // 과거 구간: 실제 값의 편차를 좀 더 반영
+                        combinedNorm = (norm * 0.8) + (timeNorm * 0.2);
+                    }
+                    
+                    h = 15 + (combinedNorm * 85);
+                }
+
+                // 우상향 계단 강제 보정: 이전 달보다 배당금이 커졌다면, 무조건 4% 이상 더 높게 그려서 역전이나 평평함 방지
+                if (div > previousVal && h < previousHeight + 4 && div > 0) {
+                    h = previousHeight + 4;
+                } else if (div === previousVal && div > 0) {
+                    h = previousHeight; // 값이 완벽히 같으면 평평하게
+                } else if (div < previousVal && div > 0) {
+                    // 예외적으로 값이 떨어졌을 경우 (과거 직접 입력 등), 시간 가중치 무시하고 순수 비율로 바닥으로 내림
+                    let pureNorm = (div - minDiv) / divDiff;
+                    h = 15 + (pureNorm * 85);
+                }
+
+                if (h > 100) h = 100; // 100% 한도 초과 방지
+                
+                previousVal = div;
+                previousHeight = h;
+
                 const isCurrent = m === currentMonth;
                 const isDec = m === 12;
                 
