@@ -75,10 +75,13 @@
                 <p class="text-[10px] text-slate-500 font-medium" id="last-update-time">데이터 갱신: -</p>
             </div>
         </div>
-        <div class="flex items-center gap-3">
-            <div class="text-[10px] font-bold text-brand bg-brand/10 px-2.5 py-1 rounded-lg border border-brand/20 shadow-sm tracking-wide">
-                by 에이미 v1.11
+        <div class="flex items-center gap-2 sm:gap-3">
+            <div class="text-[10px] font-bold text-brand bg-brand/10 px-2 py-1 rounded-lg border border-brand/20 shadow-sm tracking-wide hidden sm:block">
+                by 에이미 v1.13
             </div>
+            <button onclick="openDataManagementModal()" class="w-8 h-8 rounded-full bg-cardBg flex items-center justify-center text-slate-400 hover:text-white hover:bg-cardBgLight transition-colors shadow-sm" title="데이터 백업/복원">
+                <i class="fas fa-database text-xs"></i>
+            </button>
             <button onclick="openManualUpdateModal()" class="w-8 h-8 rounded-full bg-cardBg flex items-center justify-center text-slate-400 hover:text-white hover:bg-cardBgLight transition-colors shadow-sm" title="배당금 수동 업데이트">
                 <i class="fas fa-pen text-xs"></i>
             </button>
@@ -249,6 +252,30 @@
             </button>
         </div>
     </nav>
+
+    <!-- [모달] 데이터 백업/복원 -->
+    <div id="modal-data-management" class="fixed inset-0 z-[70] hidden bg-bgMain/90 backdrop-blur-sm flex items-center justify-center px-4">
+        <div class="bg-cardBg rounded-[28px] w-full max-w-sm p-7 border border-slate-700 shadow-2xl">
+            <h3 class="text-xl font-bold mb-2 text-white text-center">데이터 백업 및 복원</h3>
+            <p class="text-[11px] text-slate-400 mb-6 text-center leading-relaxed">
+                스마트폰을 변경하거나 앱 주소가 바뀌어도<br>데이터를 안전하게 이동할 수 있습니다.
+            </p>
+            <div class="space-y-4 mb-8">
+                <button onclick="exportData()" class="w-full py-4 rounded-2xl text-sm font-bold bg-blue-900/40 text-blue-300 border border-blue-500/30 hover:bg-blue-800/60 transition-all flex items-center justify-center gap-2">
+                    <i class="fas fa-download"></i> 내 기기에 백업 (다운로드)
+                </button>
+                <div class="relative">
+                    <input type="file" id="import-file" accept=".json" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="importData(event)">
+                    <button class="w-full py-4 rounded-2xl text-sm font-bold bg-emerald-900/40 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-800/60 transition-all flex items-center justify-center gap-2 pointer-events-none">
+                        <i class="fas fa-upload"></i> 백업 파일 복원 (불러오기)
+                    </button>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="closeModal('modal-data-management')" class="w-full py-3.5 rounded-2xl text-sm font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors">닫기</button>
+            </div>
+        </div>
+    </div>
 
     <!-- [모달] 계좌 추가 -->
     <div id="modal-add-account" class="fixed inset-0 z-50 hidden bg-bgMain/90 backdrop-blur-sm flex items-center justify-center px-4">
@@ -460,7 +487,7 @@
         }
 
         /* ==========================================
-           3. 로컬 스토리지
+           3. 로컬 스토리지 데이터 및 백업 관리
            ========================================== */
         function loadLocalData() {
             const saved = localStorage.getItem(STORAGE_KEY);
@@ -473,8 +500,54 @@
             localStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
         }
 
+        function openDataManagementModal() {
+            document.getElementById('import-file').value = ''; 
+            document.getElementById('modal-data-management').classList.remove('hidden');
+        }
+
+        function exportData() {
+            const dataStr = JSON.stringify(userData);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const exportFileDefaultName = `income_snowball_backup_${new Date().toISOString().slice(0,10).replace(/-/g, '')}.json`;
+
+            const linkElement = document.createElement('a');
+            linkElement.href = url;
+            linkElement.download = exportFileDefaultName;
+            document.body.appendChild(linkElement);
+            linkElement.click();
+            document.body.removeChild(linkElement);
+            URL.revokeObjectURL(url);
+            
+            showToast("데이터가 기기에 저장되었습니다.");
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (importedData && Array.isArray(importedData.accounts)) {
+                        userData = importedData;
+                        saveLocalData();
+                        renderAll();
+                        closeModal('modal-data-management');
+                        showToast("데이터 복원이 완료되었습니다.");
+                    } else {
+                        showToast("올바른 백업 파일 형식이 아닙니다.");
+                    }
+                } catch (err) {
+                    showToast("파일을 읽는 중 오류가 발생했습니다.");
+                }
+            };
+            reader.readAsText(file);
+        }
+
         /* ==========================================
-           4. UI 렌더링 로직 (대시보드 통합/차트 병합)
+           4. UI 렌더링 로직
            ========================================== */
         const formatMoney = (num) => Math.round(num).toLocaleString();
         
@@ -489,6 +562,8 @@
             let totalInvested = 0;
             let totalAccumulatedDiv = 0;
             let monthlyDiv = 0;
+            let prevMonthlyDiv = 0; 
+            let nextMonthlyDivBase = 0; 
             let totalItems = 0;
             let totalQty = 0;
             let nextMonthAddedDiv = 0;
@@ -499,6 +574,8 @@
             let annualTaxFree = 0;
 
             const currentMonth = new Date().getMonth() + 1;
+            const prevMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+            const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
 
             userData.accounts.forEach(acc => {
                 const accTaxRate = acc.taxRate !== undefined ? acc.taxRate : 0.154;
@@ -510,9 +587,16 @@
                     const invested = h.quantity * h.avgPrice;
                     
                     const expectedDiv = h.quantity * mData.div * (1 - accTaxRate);
-                    const actualCurrentDiv = h.monthlyDividends && h.monthlyDividends[currentMonth] ? h.monthlyDividends[currentMonth].amount : null;
-                    const div = (actualCurrentDiv !== null && actualCurrentDiv !== undefined) ? actualCurrentDiv : expectedDiv;
                     
+                    const actualCurrentDiv = h.monthlyDividends && h.monthlyDividends[currentMonth] ? h.monthlyDividends[currentMonth].amount : null;
+                    const currentDiv = (actualCurrentDiv !== null && actualCurrentDiv !== undefined) ? actualCurrentDiv : expectedDiv;
+                    
+                    const actualPrevDiv = h.monthlyDividends && h.monthlyDividends[prevMonth] ? h.monthlyDividends[prevMonth].amount : null;
+                    const prevDiv = (actualPrevDiv !== null && actualPrevDiv !== undefined) ? actualPrevDiv : expectedDiv;
+
+                    const actualNextDiv = h.monthlyDividends && h.monthlyDividends[nextMonth] ? h.monthlyDividends[nextMonth].amount : null;
+                    const nextDiv = (actualNextDiv !== null && actualNextDiv !== undefined) ? actualNextDiv : expectedDiv;
+
                     const baseDiv = h.baseAccumulatedDiv !== undefined ? h.baseAccumulatedDiv : (h.accumulatedDiv || 0);
                     const monthlySum = Object.values(h.monthlyDividends || {}).reduce((sum, record) => sum + (record.amount || 0), 0);
                     const accDivReceived = baseDiv + monthlySum;
@@ -542,13 +626,15 @@
                     totalAsset += currentAsset;
                     totalInvested += invested;
                     totalAccumulatedDiv += accDivReceived;
-                    monthlyDiv += div;
+                    monthlyDiv += currentDiv;
+                    prevMonthlyDiv += prevDiv;
+                    nextMonthlyDivBase += nextDiv;
                     totalItems++;
                     totalQty += h.quantity;
 
                     const targetData = marketData[h.targetTicker];
-                    if (targetData && div > 0 && targetData.price > 0) {
-                        const sharesToBuy = Math.floor(div / targetData.price);
+                    if (targetData && currentDiv > 0 && targetData.price > 0) {
+                        const sharesToBuy = Math.floor(currentDiv / targetData.price);
                         nextMonthAddedDiv += (sharesToBuy * targetData.div) * (1 - accTaxRate);
                     }
 
@@ -557,10 +643,9 @@
                 });
             });
 
-            // 이번 달 & 연간 배당 현황 렌더링
             document.getElementById('dash-monthly-div').textContent = formatMoney(monthlyDiv);
-            document.getElementById('dash-prev-div').textContent = formatMoney(monthlyDiv) + '원';
-            document.getElementById('dash-next-div').textContent = formatMoney(monthlyDiv + nextMonthAddedDiv) + '원';
+            document.getElementById('dash-prev-div').textContent = formatMoney(prevMonthlyDiv) + '원';
+            document.getElementById('dash-next-div').textContent = formatMoney(nextMonthlyDivBase + nextMonthAddedDiv) + '원';
             
             document.getElementById('dash-annual-div').textContent = formatMoney(annualTotalPostTax);
             document.getElementById('dash-annual-taxable').textContent = formatMoney(annualTaxablePreTax) + '원';
@@ -580,7 +665,6 @@
             document.getElementById('dash-total-asset-sub').textContent = `${formatMoney(totalAsset)}원`;
             document.getElementById('dash-acc-div-sub').textContent = `누적 수령액: ${formatMoney(totalAccumulatedDiv)}원`;
 
-            // TR 렌더링
             const trPnlEl = document.getElementById('dash-total-pnl');
             const capPnlEl = document.getElementById('dash-capital-pnl');
             const divPnlEl = document.getElementById('dash-dividend-pnl');
@@ -733,7 +817,6 @@
                         }
                     });
 
-                    // 재투자 매수 처리 (이번 달부터 시작)
                     if (m >= currentMonth) {
                         acc.holdings.forEach(h => {
                             if (h.cashBuffer > 0 && h.targetTicker) {
@@ -770,7 +853,6 @@
                 return;
             }
 
-            // 시각적 우상향 극대화를 위한 기준점 계산
             const maxDiv = Math.max(...history);
             const minDiv = Math.min(...history); 
             const divDiff = maxDiv - minDiv;
@@ -778,8 +860,8 @@
             let chartHTML = '';
             const calcHeight = (val) => {
                 if (divDiff <= 0) return 40; 
-                // 상단 텍스트를 위한 여백을 두고, 최하단 막대를 15%로 강제 고정하여 경사도를 시원하게 벌림
-                return 15 + ((val - minDiv) / divDiff) * 65;
+                // 단차를 극대화하기 위해 최저점을 15%로 변경
+                return 15 + ((val - minDiv) / divDiff) * 85;
             };
 
             history.forEach((div, index) => {
@@ -806,7 +888,6 @@
                     valColor = 'text-slate-300';
                 }
                 
-                // 만 단위 축약 표기 시 소수점 1자리까지 표시하여 디테일 살림 (예: 9.1만)
                 let shortVal = '';
                 if (div >= 10000) {
                     shortVal = (div / 10000).toFixed(1).replace(/\.0$/, '') + '만';
@@ -814,7 +895,7 @@
                     shortVal = formatMoney(div);
                 }
 
-                // whitespace-nowrap 적용으로 모바일에서 글자가 두 줄로 꺾이는 현상 강제 방지
+                // whitespace-nowrap 추가로 모바일 줄바꿈 현상 방지
                 chartHTML += `
                     <div class="flex flex-col items-center justify-end flex-1 h-full relative group">
                         <span class="text-[8.5px] sm:text-[10px] mb-1.5 ${valColor} transition-opacity tracking-tighter whitespace-nowrap z-10">${shortVal}</span>
