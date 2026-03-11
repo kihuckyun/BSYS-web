@@ -77,8 +77,11 @@
         </div>
         <div class="flex items-center gap-2 sm:gap-3">
             <div class="text-[10px] font-bold text-brand bg-brand/10 px-2 py-1 rounded-lg border border-brand/20 shadow-sm tracking-wide hidden sm:block">
-                by 에이미 v1.18
+                by 에이미 v1.28
             </div>
+            <button onclick="forceSyncData()" class="w-8 h-8 rounded-full bg-cardBg flex items-center justify-center text-slate-400 hover:text-brand hover:bg-cardBgLight transition-colors shadow-sm" title="수동 동기화">
+                <i class="fas fa-sync-alt text-xs"></i>
+            </button>
             <button onclick="openDataManagementModal()" class="w-8 h-8 rounded-full bg-cardBg flex items-center justify-center text-slate-400 hover:text-white hover:bg-cardBgLight transition-colors shadow-sm" title="데이터 백업/복원">
                 <i class="fas fa-database text-xs"></i>
             </button>
@@ -153,35 +156,7 @@
                 </div>
             </div>
 
-            <!-- 3. 연간 배당 및 과세 한도 현황 -->
-            <div class="bg-cardBg rounded-[24px] p-5 border border-slate-800/60 shadow-sm relative overflow-hidden">
-                <h3 class="text-sm font-bold text-white mb-3 flex items-center gap-2">
-                    <i class="fas fa-calendar-alt text-brand"></i> 올해 연간 배당금 (1~12월)
-                </h3>
-                <div class="flex items-baseline gap-1.5 mb-5">
-                    <span class="text-3xl font-extrabold text-white tracking-tight" id="dash-annual-div">0</span>
-                    <span class="text-sm font-bold text-slate-400">원 <span class="text-[10px] font-normal">(세후)</span></span>
-                </div>
-
-                <div class="mb-3 mt-1">
-                    <div class="flex justify-between items-end mb-2">
-                        <p class="text-[11px] text-slate-300 font-medium flex items-center gap-1.5">
-                            종합소득세 과세 진행률 <span class="text-[9px] bg-red-900/40 border border-red-500/30 px-1.5 py-0.5 rounded text-red-400 font-bold tracking-wide">한도 2천만</span>
-                        </p>
-                        <p class="text-xs font-bold text-white" id="dash-taxable-pct">0%</p>
-                    </div>
-                    <div class="w-full bg-slate-600/60 rounded-full h-3 border border-slate-500/50 overflow-hidden shadow-inner">
-                        <div class="bg-gradient-to-r from-blue-400 to-brand h-3 rounded-full transition-all duration-700 shadow-[0_0_10px_rgba(59,130,246,0.5)]" id="dash-taxable-bar" style="width: 0%"></div>
-                    </div>
-                </div>
-
-                <div class="flex justify-between text-[10px] sm:text-[11px] mt-4 pt-3 border-t border-slate-700/50">
-                    <p class="text-slate-400">과세 배당<span class="text-[9px] text-slate-500 ml-0.5">(세전)</span> <strong class="text-slate-200 ml-1" id="dash-annual-taxable">0원</strong></p>
-                    <p class="text-slate-400 flex items-center"><i class="fas fa-shield-alt text-emerald-500 mr-1 opacity-80"></i>절세 배당 <strong class="text-emerald-400 ml-1" id="dash-annual-taxfree">0원</strong></p>
-                </div>
-            </div>
-
-            <!-- 4. 자산 구성 및 월별 배당 차트 통합 뷰 -->
+            <!-- 3. 자산 구성 및 월별 배당 차트 통합 뷰 -->
             <div class="bg-cardBg rounded-[28px] p-5 sm:p-7 border border-slate-800/60 shadow-lg">
                 <!-- 상단: 자산 구성 도넛 차트 -->
                 <div class="flex justify-between items-center mb-6">
@@ -201,16 +176,56 @@
                         <div class="text-[10px] bg-slate-800 px-2 py-1 rounded text-slate-300">세후 적용</div>
                     </div>
                     
-                    <div class="relative h-44 sm:h-52 flex items-end justify-between gap-[3px] sm:gap-1.5 px-1 mb-2" id="dash-sim-chart">
+                    <div class="relative h-44 sm:h-52 flex items-end justify-between gap-[3px] sm:gap-1.5 px-0.5 mb-2" id="dash-sim-chart">
                         <!-- 막대 차트 렌더링 -->
                     </div>
+                </div>
+
+                <!-- 하단: 신규 자산 성장 시뮬레이션 라인 차트 -->
+                <div class="pt-6 border-t border-slate-700/50 mt-6 flex flex-col">
+                    <div class="flex justify-between items-center mb-1">
+                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                            자산 성장 시뮬레이션
+                            <span class="text-[9px] bg-emerald-900/50 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/30 font-bold ml-1 tracking-wide">DRIP 적용</span>
+                        </h3>
+                    </div>
                     
+                    <!-- 차트 컨테이너 -->
+                    <div class="w-full mt-2 flex flex-col items-center" id="dash-line-chart">
+                        <!-- 라인 차트 렌더링 -->
+                    </div>
+
                     <!-- 시뮬레이션 요약 텍스트 -->
-                    <div class="mt-7 pt-4 border-t border-slate-700/50">
+                    <div class="mt-3 pt-3 border-t border-slate-700/50">
                         <ul class="text-[11px] sm:text-xs space-y-2.5 text-slate-400" id="dash-sim-summary">
                             <!-- 요약 내용 렌더링 -->
                         </ul>
                     </div>
+                </div>
+            </div>
+
+            <!-- 4. 종소세 과세 한도 현황 -->
+            <div class="bg-cardBg rounded-[24px] p-5 border border-slate-800/60 shadow-sm relative overflow-hidden mt-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-file-invoice-dollar text-brand"></i> 금융소득종합과세
+                    </h3>
+                    <span class="text-[9px] bg-red-900/40 border border-red-500/30 px-2 py-0.5 rounded text-red-400 font-bold tracking-wide">한도 2천만</span>
+                </div>
+
+                <div class="mb-1">
+                    <div class="flex justify-between items-end mb-2">
+                        <p class="text-[11px] text-slate-400 font-medium">과세 진행률 (세전 누적)</p>
+                        <p class="text-sm font-extrabold text-white tracking-tight" id="dash-taxable-pct">0%</p>
+                    </div>
+                    <div class="w-full bg-slate-800 rounded-full h-2.5 border border-slate-700/50 overflow-hidden shadow-inner">
+                        <div class="bg-gradient-to-r from-blue-500 to-brand h-2.5 rounded-full transition-all duration-700 shadow-[0_0_10px_rgba(59,130,246,0.4)]" id="dash-taxable-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="flex justify-between text-[10px] sm:text-[11px] mt-4 pt-3 border-t border-slate-700/50">
+                    <p class="text-slate-400">과세 대상 배당 <strong class="text-slate-200 ml-1" id="dash-annual-taxable">0원</strong></p>
+                    <p class="text-slate-400 flex items-center"><i class="fas fa-shield-alt text-emerald-500 mr-1 opacity-80"></i>절세 배당 <strong class="text-emerald-400 ml-1" id="dash-annual-taxfree">0원</strong></p>
                 </div>
             </div>
 
@@ -239,7 +254,7 @@
 
     </main>
 
-    <!-- 하단 탭 바 (2개 탭) -->
+    <!-- 하단 탭 바 -->
     <nav class="absolute bottom-0 w-full bg-bgMain/95 backdrop-blur-xl border-t border-slate-800 pb-safe z-40">
         <div class="flex justify-center items-center h-20 px-4 max-w-md mx-auto">
             <button onclick="switchTab('dashboard')" class="tab-btn w-1/2 h-full flex flex-col items-center justify-center text-brand transition-all relative" data-target="dashboard">
@@ -384,7 +399,6 @@
                 </div>
                 <div>
                     <label class="block text-[11px] text-slate-400 mb-1.5 font-medium ml-1">배당락일 선택</label>
-                    <!-- iOS Safari overflow 방지 max-w-full, appearance-none 적용 -->
                     <input type="date" id="post-exdate" class="w-full max-w-full bg-bgMain border border-slate-700 rounded-xl px-3 py-3.5 text-white text-sm focus:border-brand focus:outline-none appearance-none block" style="color-scheme: dark;">
                 </div>
             </div>
@@ -434,9 +448,37 @@
             setTimeout(() => document.getElementById('global-loading').style.display = 'none', 300);
         });
 
+        async function forceSyncData() {
+            const loader = document.getElementById('global-loading');
+            loader.style.display = 'flex';
+            setTimeout(() => {
+                loader.style.opacity = '1';
+            }, 10);
+
+            try {
+                await fetchMarketData();
+                renderAll();
+                showToast("데이터가 최신으로 동기화되었습니다.");
+            } catch (error) {
+                showToast("동기화에 실패했습니다. 네트워크를 확인하세요.");
+            } finally {
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 300);
+            }
+        }
+
         async function fetchMarketData() {
             try {
-                const response = await fetch(API_GET_URL);
+                const timestamp = new Date().getTime();
+                const response = await fetch(`${API_GET_URL}?t=${timestamp}`, {
+                    method: 'GET',
+                    cache: 'no-store',
+                    headers: {
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                
                 if (!response.ok) throw new Error('API fetch failed');
                 const rawData = await response.json();
                 
@@ -461,7 +503,7 @@
                 document.getElementById('last-update-time').textContent = `최근 동기화: ${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
             } catch (error) {
                 console.error("Fetch error:", error);
-                showToast("시장 데이터를 불러오지 못했습니다.");
+                throw error; 
             }
         }
 
@@ -485,9 +527,9 @@
                     body: JSON.stringify({ ticker, dividend: parseInt(dividend), ex_date: exDate })
                 });
                 if(res.ok) {
-                    showToast("수동 업데이트 완료! 새로고침됩니다.");
+                    showToast("수동 업데이트 완료! 데이터를 새로고침합니다.");
                     closeModal('modal-manual-update');
-                    setTimeout(() => location.reload(), 1500);
+                    await forceSyncData(); 
                 } else {
                     showToast("업데이트 실패. API를 확인하세요.");
                 }
@@ -590,16 +632,21 @@
             const prevMonth = currentMonth === 1 ? 12 : currentMonth - 1;
             const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
 
+            let mBasePrincipal = 0; 
+            let mBaseAsset = 0; 
+
             userData.accounts.forEach(acc => {
                 const accTaxRate = acc.taxRate !== undefined ? acc.taxRate : 0.154;
-                const isTaxable = accTaxRate > 0;
 
                 acc.holdings.forEach(h => {
+                    const actualTaxRate = KR_TICKERS.includes(h.ticker) ? 0 : accTaxRate;
+                    const isTaxable = actualTaxRate > 0;
+                    
                     const mData = marketData[h.ticker] || { price: h.avgPrice, div: 0 }; 
                     const currentAsset = h.quantity * mData.price;
                     const invested = h.quantity * h.avgPrice;
                     
-                    const expectedDiv = h.quantity * mData.div * (1 - accTaxRate);
+                    const expectedDiv = h.quantity * mData.div * (1 - actualTaxRate);
                     
                     const actualCurrentDiv = h.monthlyDividends && h.monthlyDividends[currentMonth] ? h.monthlyDividends[currentMonth].amount : null;
                     const currentDiv = (actualCurrentDiv !== null && actualCurrentDiv !== undefined) ? actualCurrentDiv : expectedDiv;
@@ -622,10 +669,10 @@
 
                         if (manualInput !== null && manualInput !== undefined) {
                             postTaxDiv = manualInput;
-                            preTaxDiv = isTaxable ? manualInput / (1 - accTaxRate) : manualInput; 
+                            preTaxDiv = isTaxable ? manualInput / (1 - actualTaxRate) : manualInput; 
                         } else {
                             preTaxDiv = expectedPreTax;
-                            postTaxDiv = expectedPreTax * (1 - accTaxRate);
+                            postTaxDiv = expectedPreTax * (1 - actualTaxRate);
                         }
 
                         annualTotalPostTax += postTaxDiv;
@@ -644,11 +691,15 @@
                     nextMonthlyDivBase += nextDiv;
                     totalItems++;
                     totalQty += h.quantity;
+                    
+                    mBasePrincipal += invested;
+                    mBaseAsset += currentAsset;
 
                     const targetData = marketData[h.targetTicker];
                     if (targetData && currentDiv > 0 && targetData.price > 0) {
                         const sharesToBuy = Math.floor(currentDiv / targetData.price);
-                        nextMonthAddedDiv += (sharesToBuy * targetData.div) * (1 - accTaxRate);
+                        const targetActualTaxRate = KR_TICKERS.includes(h.targetTicker) ? 0 : accTaxRate;
+                        nextMonthAddedDiv += (sharesToBuy * targetData.div) * (1 - targetActualTaxRate);
                     }
 
                     if(!holdingsSummary[h.ticker]) holdingsSummary[h.ticker] = 0;
@@ -660,19 +711,19 @@
             document.getElementById('dash-prev-div').textContent = formatMoney(prevMonthlyDiv) + '원';
             document.getElementById('dash-next-div').textContent = formatMoney(nextMonthlyDivBase + nextMonthAddedDiv) + '원';
             
-            document.getElementById('dash-annual-div').textContent = formatMoney(annualTotalPostTax);
-            document.getElementById('dash-annual-taxable').textContent = formatMoney(annualTaxablePreTax) + '원';
-            document.getElementById('dash-annual-taxfree').textContent = formatMoney(annualTaxFree) + '원';
-
             const LIMIT_20M = 20000000;
             const taxPct = Math.min((annualTaxablePreTax / LIMIT_20M) * 100, 100);
+            
+            document.getElementById('dash-annual-taxable').textContent = formatMoney(annualTaxablePreTax) + '원';
+            document.getElementById('dash-annual-taxfree').textContent = formatMoney(annualTaxFree) + '원';
             document.getElementById('dash-taxable-pct').textContent = taxPct.toFixed(1) + '%';
+            
             const barEl = document.getElementById('dash-taxable-bar');
             barEl.style.width = taxPct + '%';
             if (taxPct > 80) {
-                barEl.className = 'bg-gradient-to-r from-orange-500 to-red-600 h-3 rounded-full transition-all duration-700 shadow-[0_0_10px_rgba(239,68,68,0.5)]';
+                barEl.className = 'bg-gradient-to-r from-orange-500 to-red-600 h-2.5 rounded-full transition-all duration-700 shadow-[0_0_10px_rgba(239,68,68,0.5)]';
             } else {
-                barEl.className = 'bg-gradient-to-r from-blue-400 to-brand h-3 rounded-full transition-all duration-700 shadow-[0_0_10px_rgba(59,130,246,0.4)]';
+                barEl.className = 'bg-gradient-to-r from-blue-500 to-brand h-2.5 rounded-full transition-all duration-700 shadow-[0_0_10px_rgba(59,130,246,0.4)]';
             }
 
             document.getElementById('dash-total-asset-sub').textContent = `${formatMoney(totalAsset)}원`;
@@ -790,36 +841,30 @@
                 }).join('');
             }
 
-            renderDashboardSimulation();
+            renderDashboardSimulation(mBasePrincipal, mBaseAsset, annualTotalPostTax);
         }
 
-        function renderDashboardSimulation() {
+        // 라인 차트 연동 로직 (v1.28: 바 차트 텍스트 오버플로우 방지)
+        function renderDashboardSimulation(basePrincipal, baseAsset, annualWithoutDrip) {
             let simAccounts = JSON.parse(JSON.stringify(userData.accounts));
             const currentMonth = new Date().getMonth() + 1; 
-            let initialAsset = 0;
             
-            simAccounts.forEach(acc => {
-                acc.holdings.forEach(h => {
-                    const mData = marketData[h.ticker];
-                    if(mData) initialAsset += (h.quantity * mData.price);
-                });
-            });
-
             let history = []; 
+            let lineChartData = [];
+
             for (let m = 1; m <= 12; m++) {
                 let monthlyDivTotal = 0;
                 
                 simAccounts.forEach(acc => {
                     const accTaxRate = acc.taxRate !== undefined ? acc.taxRate : 0.154;
-                    
                     acc.holdings.forEach(h => {
+                        const actualTaxRate = KR_TICKERS.includes(h.ticker) ? 0 : accTaxRate;
                         const mData = marketData[h.ticker];
                         if(mData) {
                             const origAcc = userData.accounts.find(a => a.id === acc.id);
                             const origH = origAcc ? origAcc.holdings.find(oh => oh.id === h.id) : null;
                             const actualRecord = origH && origH.monthlyDividends && origH.monthlyDividends[m] ? origH.monthlyDividends[m].amount : null;
-                            
-                            const expected = h.quantity * mData.div * (1 - accTaxRate);
+                            const expected = h.quantity * mData.div * (1 - actualTaxRate);
                             const div = (actualRecord !== null && actualRecord !== undefined) ? actualRecord : expected;
                             
                             monthlyDivTotal += div;
@@ -854,20 +899,47 @@
                         });
                     }
                 });
+                
                 history.push(monthlyDivTotal);
+
+                if (m <= currentMonth) {
+                    lineChartData.push({
+                        month: m,
+                        principal: basePrincipal,
+                        tr: baseAsset 
+                    });
+                } else {
+                    let mSimAsset = 0;
+                    simAccounts.forEach(acc => {
+                        acc.holdings.forEach(h => {
+                            const mData = marketData[h.ticker];
+                            if(mData) {
+                                mSimAsset += (h.quantity * mData.price) + (h.cashBuffer || 0);
+                            }
+                        });
+                    });
+                    lineChartData.push({
+                        month: m,
+                        principal: basePrincipal,
+                        tr: mSimAsset 
+                    });
+                }
             }
 
             const currentDiv = history[currentMonth - 1] || 0;
             const decDiv = history[11] || 0;
 
-            const chartContainer = document.getElementById('dash-sim-chart');
+            const barContainer = document.getElementById('dash-sim-chart');
+            const lineContainer = document.getElementById('dash-line-chart');
+            
             if (history.every(v => v === 0)) {
-                chartContainer.innerHTML = '<div class="w-full h-full flex items-center justify-center text-slate-500 text-sm font-medium">데이터가 없습니다.</div>';
+                barContainer.innerHTML = '<div class="w-full h-full flex items-center justify-center text-slate-500 text-sm font-medium">데이터가 없습니다.</div>';
+                lineContainer.innerHTML = '<div class="w-full h-full flex items-center justify-center text-slate-500 text-sm font-medium">데이터가 없습니다.</div>';
                 document.getElementById('dash-sim-summary').innerHTML = '<li class="text-xs">데이터 없음</li>';
                 return;
             }
 
-            // 시각적 우상향 극대화를 위한 기준점 계산 로직 (v1.18 핵심 업데이트)
+            // 막대 차트 렌더링
             const nonZeroHistory = history.filter(v => v > 0);
             const minDiv = nonZeroHistory.length > 0 ? Math.min(...nonZeroHistory) : 0; 
             const maxDiv = Math.max(...history);
@@ -887,33 +959,21 @@
                     h = 40;
                 } else {
                     let norm = (div - minDiv) / divDiff;
-                    let timeNorm = index / 11; // 0 to 1
-                    
-                    // 혼합 렌더링 알고리즘: 미세한 차이라도 시원한 우상향 계단식으로 표현되도록 시간 가중치 혼합
-                    let combinedNorm;
-                    if (m >= currentMonth) {
-                        // 미래 구간(스노우볼): 시간이 흐름에 따른 우상향 경사를 강제하여 확실한 시각적 피드백 제공
-                        combinedNorm = (norm * 0.3) + (timeNorm * 0.7);
-                    } else {
-                        // 과거 구간: 실제 값의 편차를 좀 더 반영
-                        combinedNorm = (norm * 0.8) + (timeNorm * 0.2);
-                    }
-                    
+                    let timeNorm = index / 11; 
+                    let combinedNorm = (m >= currentMonth) ? (norm * 0.3) + (timeNorm * 0.7) : (norm * 0.8) + (timeNorm * 0.2);
                     h = 15 + (combinedNorm * 85);
                 }
 
-                // 우상향 계단 강제 보정: 이전 달보다 배당금이 커졌다면, 무조건 4% 이상 더 높게 그려서 역전이나 평평함 방지
                 if (div > previousVal && h < previousHeight + 4 && div > 0) {
                     h = previousHeight + 4;
                 } else if (div === previousVal && div > 0) {
-                    h = previousHeight; // 값이 완벽히 같으면 평평하게
+                    h = previousHeight; 
                 } else if (div < previousVal && div > 0) {
-                    // 예외적으로 값이 떨어졌을 경우 (과거 직접 입력 등), 시간 가중치 무시하고 순수 비율로 바닥으로 내림
                     let pureNorm = (div - minDiv) / divDiff;
                     h = 15 + (pureNorm * 85);
                 }
 
-                if (h > 100) h = 100; // 100% 한도 초과 방지
+                if (h > 100) h = 100; 
                 
                 previousVal = div;
                 previousHeight = h;
@@ -946,31 +1006,109 @@
                     shortVal = formatMoney(div);
                 }
 
+                // v1.28: 텍스트 오버플로우를 막기 위해 텍스트 크기 7px로 축소 (모바일 겹침 해결)
                 chartHTML += `
-                    <div class="flex flex-col items-center justify-end flex-1 h-full relative group">
-                        <span class="text-[8.5px] sm:text-[10px] mb-1.5 ${valColor} transition-opacity tracking-tighter whitespace-nowrap z-10">${shortVal}</span>
+                    <div class="flex flex-col items-center justify-end flex-1 h-full relative group min-w-0 px-[1px]">
+                        <span class="text-[7px] sm:text-[8px] mb-1.5 ${valColor} transition-opacity tracking-tighter whitespace-nowrap z-10">${shortVal}</span>
                         <div class="w-full ${bgClass} relative hover:opacity-80 transition-opacity cursor-pointer" style="height: ${h}%">
                             <span class="absolute -top-7 sm:-top-8 left-1/2 transform -translate-x-1/2 text-[8px] sm:text-[9px] opacity-0 group-hover:opacity-100 bg-cardBg px-1.5 py-1 rounded-md text-white whitespace-nowrap z-20 shadow-lg border border-slate-700 transition-opacity pointer-events-none">${formatMoney(div)}원</span>
                         </div>
-                        <span class="text-[8px] sm:text-[9px] mt-1 sm:mt-2 ${labelColor}">${m}월</span>
+                        <span class="text-[7px] sm:text-[8px] mt-1 sm:mt-2 ${labelColor}">${m}월</span>
                     </div>
                 `;
             });
-            chartContainer.innerHTML = chartHTML;
+            barContainer.innerHTML = chartHTML;
 
-            let finalAsset = 0;
-            simAccounts.forEach(acc => {
-                acc.holdings.forEach(h => {
-                    const mData = marketData[h.ticker];
-                    if(mData) finalAsset += (h.quantity * mData.price) + (h.cashBuffer || 0);
-                });
-            });
+            // 라인 차트 렌더링
+            const w = 1000;
+            const h_svg = 380; 
+            const padT = 80;  
+            const padB = 50;  
+            const padL = 40; 
+            const padR = 40; 
+            const cW = w - padL - padR;
+            const cH = h_svg - padT - padB;
+
+            const allLineVals = lineChartData.flatMap(d => [d.principal, d.tr]);
+            const rawMin = Math.min(...allLineVals);
+            const rawMax = Math.max(...allLineVals);
+            const rawRange = rawMax - rawMin || rawMax * 0.1 || 1;
+            
+            const minY_line = Math.max(0, rawMin - rawRange * 0.4);
+            const maxY_line = rawMax + rawRange * 0.3;
+            const rY = maxY_line - minY_line;
+
+            const getX = (m) => padL + ((m - 1) / 11) * cW;
+            const getY = (v) => padT + cH - ((v - minY_line) / rY) * cH;
+
+            const pathP = `M ${lineChartData.map(d => `${getX(d.month)},${getY(d.principal)}`).join(' L ')}`;
+            
+            const trPast = lineChartData.filter(d => d.month <= currentMonth);
+            const trFuture = lineChartData.filter(d => d.month >= currentMonth); 
+            
+            const pathTRPast = `M ${trPast.map(d => `${getX(d.month)},${getY(d.tr)}`).join(' L ')}`;
+            const pathTRFuture = `M ${trFuture.map(d => `${getX(d.month)},${getY(d.tr)}`).join(' L ')}`;
+
+            const curD = lineChartData.find(d => d.month === currentMonth);
+            const decD = lineChartData[11];
+            const fmtLine = (v) => (v/10000).toFixed(1).replace(/\.0$/, '') + '만';
+
+            let lineTextHtml = '';
+            if (curD) {
+                lineTextHtml += `<circle cx="${getX(currentMonth)}" cy="${getY(curD.tr)}" r="10" fill="#1e293b" stroke="#10b981" stroke-width="5" />`;
+                let textAnchor = currentMonth === 1 ? "start" : (currentMonth === 12 ? "end" : "middle");
+                lineTextHtml += `<text x="${getX(currentMonth)}" y="${getY(curD.tr) - 25}" fill="#10b981" font-size="34" font-weight="bold" text-anchor="${textAnchor}" font-family="sans-serif">${fmtLine(curD.tr)}</text>`;
+            }
+            if (currentMonth < 12 && decD) {
+                lineTextHtml += `<circle cx="${getX(12)}" cy="${getY(decD.tr)}" r="10" fill="#1e293b" stroke="#34d399" stroke-width="5" />`;
+                lineTextHtml += `<text x="${getX(12)}" y="${getY(decD.tr) - 25}" fill="#34d399" font-size="34" font-weight="bold" text-anchor="end" font-family="sans-serif">${fmtLine(decD.tr)}</text>`;
+            }
+
+            let xAxisHtml = '';
+            for (let i = 1; i <= 12; i++) {
+                xAxisHtml += `<text x="${getX(i)}" y="${h_svg - 10}" fill="#64748b" font-size="22" text-anchor="middle" font-family="sans-serif">${i}월</text>`;
+            }
+
+            const svgLineHTML = `
+                <svg viewBox="0 0 ${w} ${h_svg}" class="w-full h-auto overflow-visible drop-shadow-lg">
+                    <path d="${pathP}" fill="none" stroke="#64748b" stroke-width="5" stroke-dasharray="15,10" opacity="0.6" />
+                    <path d="${pathTRPast}" fill="none" stroke="#10b981" stroke-width="8" stroke-linecap="round" />
+                    <path d="${pathTRFuture}" fill="none" stroke="#34d399" stroke-width="8" stroke-dasharray="15,15" stroke-linecap="round" />
+                    ${lineTextHtml}
+                    ${xAxisHtml}
+                </svg>
+                
+                <div class="flex justify-center gap-x-5 sm:gap-x-8 text-[10px] sm:text-[11px] mt-2 mb-1 w-full">
+                    <div class="flex items-center gap-1.5 text-slate-400">
+                        <div class="w-4 h-0.5 border-t-2 border-dashed border-slate-500"></div> 원금
+                    </div>
+                    <div class="flex items-center gap-1.5 text-emerald-400">
+                        <div class="flex items-center">
+                            <div class="w-2.5 h-1.5 bg-emerald-500 rounded-sm"></div>
+                            <div class="w-2.5 h-0 border-t-2 border-dashed border-emerald-400 ml-0.5"></div>
+                        </div>
+                        자산 현황 / 예측
+                    </div>
+                </div>
+            `;
+            lineContainer.innerHTML = svgLineHTML;
+
+            let finalAsset = lineChartData.length > 11 ? lineChartData[11].tr : 0;
+            const annualWithDrip = history.reduce((a, b) => a + b, 0);
+            
+            let divSummaryHtml = '';
+            if (annualWithDrip > annualWithoutDrip) {
+                divSummaryHtml = `올해 총 배당금 예상: <span class="text-slate-400 mr-1">${formatMoney(annualWithoutDrip)}원</span> <i class="fas fa-arrow-right text-[9px] mx-1 text-slate-500"></i> <strong class="text-white">${formatMoney(annualWithDrip)}원</strong> <span class="text-[9px] text-emerald-400 font-bold ml-1">DRIP</span>`;
+            } else {
+                divSummaryHtml = `올해 총 배당금 예상: <strong class="text-white">${formatMoney(annualWithoutDrip)}원</strong>`;
+            }
 
             const growthRate = currentDiv > 0 ? ((decDiv - currentDiv) / currentDiv) * 100 : 0;
+            
             document.getElementById('dash-sim-summary').innerHTML = `
-                <li class="flex items-center gap-2.5"><div class="w-1.5 h-1.5 rounded-full bg-brand"></div> <div>연말 예상 배당금: <strong class="text-white">${formatMoney(decDiv)}원</strong></div></li>
-                <li class="flex items-center gap-2.5"><div class="w-1.5 h-1.5 rounded-full bg-emerald-400"></div> <div>자산 펌핑 예측: <strong class="text-white">${formatMoney(initialAsset)}원</strong> <i class="fas fa-arrow-right text-[9px] mx-1 text-slate-500"></i> <strong class="text-emerald-400">${formatMoney(finalAsset)}원</strong></div></li>
-                <li class="flex items-center gap-2.5"><div class="w-1.5 h-1.5 rounded-full bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.6)]"></div> <div>배당 재투자 효과: 배당수익 <strong class="text-yellow-400">${growthRate.toFixed(1)}%</strong> 추가 상승</div></li>
+                <li class="flex items-center gap-2.5"><div class="w-1.5 h-1.5 rounded-full bg-brand"></div> <div class="flex-1">${divSummaryHtml}</div></li>
+                <li class="flex items-center gap-2.5"><div class="w-1.5 h-1.5 rounded-full bg-emerald-400"></div> <div class="flex-1">총 자산(TR) 예측: <strong class="text-white">${formatMoney(baseAsset)}원</strong> <i class="fas fa-arrow-right text-[9px] mx-1 text-slate-500"></i> <strong class="text-emerald-400">${formatMoney(finalAsset)}원</strong></div></li>
+                <li class="flex items-center gap-2.5"><div class="w-1.5 h-1.5 rounded-full bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.6)]"></div> <div class="flex-1">배당 재투자 효과: 배당수익 <strong class="text-yellow-400">${growthRate.toFixed(1)}%</strong> 추가 상승</div></li>
             `;
         }
 
@@ -998,8 +1136,9 @@
                     : '<span class="text-[10px] bg-slate-700 text-slate-300 px-2 py-0.5 rounded-md font-medium ml-2">15.4%</span>';
                 
                 acc.holdings.forEach(h => {
+                    const actualTaxRate = KR_TICKERS.includes(h.ticker) ? 0 : accTaxRate;
                     const mData = marketData[h.ticker] || { price: h.avgPrice, div: 0 };
-                    const expectedDiv = h.quantity * mData.div * (1 - accTaxRate);
+                    const expectedDiv = h.quantity * mData.div * (1 - actualTaxRate);
                     const actualCurrentDiv = h.monthlyDividends && h.monthlyDividends[currentMonth] ? h.monthlyDividends[currentMonth].amount : null;
                     const div = (actualCurrentDiv !== null && actualCurrentDiv !== undefined) ? actualCurrentDiv : expectedDiv;
 
@@ -1015,6 +1154,7 @@
                     let itemsHTML = [];
 
                     const renderHoldingContent = (h) => {
+                        const actualTaxRate = KR_TICKERS.includes(h.ticker) ? 0 : accTaxRate;
                         const mData = marketData[h.ticker] || { price: h.avgPrice, div: 0 };
                         const asset = h.quantity * mData.price;
                         const invested = h.quantity * h.avgPrice;
@@ -1035,7 +1175,7 @@
                         const dividendPnlPct = invested > 0 ? (accDivReceived / invested) * 100 : 0;
                         const divSign = dividendPnlPct > 0 ? '+' : '';
                         
-                        const expectedDiv = h.quantity * mData.div * (1 - accTaxRate);
+                        const expectedDiv = h.quantity * mData.div * (1 - actualTaxRate);
                         const actualCurrentDiv = h.monthlyDividends && h.monthlyDividends[currentMonth] ? h.monthlyDividends[currentMonth].amount : null;
                         const guideDiv = (actualCurrentDiv !== null && actualCurrentDiv !== undefined) ? actualCurrentDiv : expectedDiv;
                         
@@ -1249,7 +1389,7 @@
                     <div class="flex items-center gap-2 sm:gap-3 bg-slate-800/40 p-2.5 sm:p-3 rounded-xl border border-slate-700/50">
                         <span class="text-[11px] text-slate-300 font-bold w-6 text-center">${m}월</span>
                         <div class="flex-1 min-w-0">
-                            <p class="text-[10px] text-slate-400">예상: <strong class="expected-div-label text-slate-200" data-month="${m}">0</strong>원</p>
+                            <p class="text-[10px] text-slate-400 expected-div-container" data-month="${m}"></p>
                             ${dateText}
                         </div>
                         <input type="number" class="w-20 sm:w-24 flex-shrink-0 bg-bgMain border border-slate-600 rounded-lg px-2 py-2 text-[11px] sm:text-xs text-white placeholder-slate-600 focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-all monthly-div-input" data-month="${m}" value="${val}" placeholder="수동입력">
@@ -1264,10 +1404,13 @@
             const ticker = document.getElementById('select-ticker').value;
             const qty = parseFloat(document.getElementById('input-quantity').value) || 0;
             const mData = marketData[ticker] || { div: 0 };
-            const expected = Math.floor(qty * mData.div * (1 - currentModalAccTaxRate));
             
-            document.querySelectorAll('.expected-div-label').forEach(el => {
-                el.textContent = formatMoney(expected);
+            const actualTaxRate = KR_TICKERS.includes(ticker) ? 0 : currentModalAccTaxRate;
+            const expected = Math.floor(qty * mData.div * (1 - actualTaxRate));
+            const taxLabelText = actualTaxRate > 0 ? '(세후)' : '(비과세)';
+            
+            document.querySelectorAll('.expected-div-container').forEach(el => {
+                el.innerHTML = `예상<span class="text-[8px] text-slate-500 ml-0.5">${taxLabelText}</span>: <strong class="text-slate-200 text-[11px] ml-0.5">${formatMoney(expected)}</strong>원`;
             });
         }
 
@@ -1460,3 +1603,5 @@
     </script>
 </body>
 </html>
+
+
