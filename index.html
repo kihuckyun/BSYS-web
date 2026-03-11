@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- html2canvas (이미지 캡처 라이브러리 추가) -->
+    <!-- html2canvas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
         tailwind.config = {
@@ -53,6 +53,31 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .glow-card { box-shadow: 0 10px 30px -10px rgba(59, 130, 246, 0.3); }
         circle { transition: stroke-dasharray 1s ease-in-out, stroke-dashoffset 1s ease-in-out; }
+
+        /* v1.34 캡처 전용 스타일: 흐림 제거, 솔리드 컬러 치환, 그림자 제거 (화질 깨짐 및 어두워짐 방지) */
+        .capture-mode * {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+        }
+        .capture-mode .bg-bgMain { background-color: #0b1120 !important; }
+        .capture-mode .bg-slate-800\/40,
+        .capture-mode .bg-slate-800\/50,
+        .capture-mode .bg-cardBg { background-color: #1e293b !important; border-color: #334155 !important; }
+        .capture-mode .bg-blue-800\/40,
+        .capture-mode .bg-blue-800\/50,
+        .capture-mode .bg-blue-900\/30 { background-color: #1e3a8a !important; border-color: #3b82f6 !important; }
+        .capture-mode .bg-brand\/10 { background-color: #172554 !important; border-color: #3b82f6 !important; }
+        .capture-mode .bg-blue-500\/10,
+        .capture-mode .bg-blue-500\/20 { background-color: #1e3a8a !important; border-color: #3b82f6 !important; }
+        .capture-mode .bg-emerald-900\/50,
+        .capture-mode .bg-emerald-500\/20 { background-color: #064e3b !important; border-color: #10b981 !important; }
+        .capture-mode .bg-red-900\/40 { background-color: #7f1d1d !important; border-color: #ef4444 !important; }
+        .capture-mode .border-slate-800\/60,
+        .capture-mode .border-slate-700\/50 { border-color: #334155 !important; }
+        .capture-mode .shadow-sm, 
+        .capture-mode .shadow-lg, 
+        .capture-mode .shadow-inner { box-shadow: none !important; }
+        .capture-mode .drop-shadow-lg { filter: none !important; }
     </style>
 </head>
 <body class="antialiased font-sans h-screen flex flex-col relative overflow-hidden">
@@ -79,7 +104,7 @@
         </div>
         <div class="flex items-center gap-1.5 sm:gap-2">
             <div class="text-[10px] font-bold text-brand bg-brand/10 px-2 py-1 rounded-lg border border-brand/20 shadow-sm tracking-wide hidden sm:block mr-1">
-                by 에이미 v1.33
+                by 에이미 v1.34
             </div>
             <button onclick="captureDashboard()" class="w-8 h-8 rounded-full bg-cardBg flex items-center justify-center text-slate-400 hover:text-emerald-400 hover:bg-cardBgLight transition-colors shadow-sm" title="월간 보고서 이미지 저장">
                 <i class="fas fa-camera text-xs"></i>
@@ -99,10 +124,10 @@
     <main class="flex-1 overflow-y-auto pb-28 px-4 sm:px-5 pt-2">
         
         <!-- 제1관: 대시보드 -->
-        <section id="tab-dashboard" class="tab-content active space-y-5 rounded-3xl p-1">
+        <section id="tab-dashboard" class="tab-content active space-y-5 rounded-3xl p-1 bg-bgMain">
             
-            <!-- v1.32: 캡처 시에만 나타나는 보고서 전용 헤더 -->
-            <div id="capture-header" class="hidden pb-5 mb-2 pl-2 mt-4">
+            <!-- 캡처 시에만 나타나는 보고서 전용 헤더 -->
+            <div id="capture-header" class="hidden pb-4 mb-2 pl-2 pt-4">
                 <div class="flex items-center gap-3">
                     <div class="w-12 h-12 rounded-full bg-brand/20 flex items-center justify-center text-brand border border-brand/30">
                         <i class="fas fa-layer-group text-xl"></i>
@@ -225,13 +250,13 @@
                         </h3>
                     </div>
                     
-                    <!-- 차트 컨테이너 -->
-                    <div class="w-full mt-2 flex flex-col items-center" id="dash-line-chart">
+                    <!-- 차트 컨테이너 (v1.34 절대좌표 HTML 오버레이 구조 적용) -->
+                    <div class="w-full mt-2 flex flex-col items-center relative" id="dash-line-chart">
                         <!-- 라인 차트 렌더링 -->
                     </div>
 
                     <!-- 시뮬레이션 요약 텍스트 -->
-                    <div class="mt-3 pt-3 border-t border-slate-700/50">
+                    <div class="mt-3 pt-3 border-t border-slate-700/50 w-full">
                         <ul class="text-[11px] sm:text-xs space-y-2.5 text-slate-400" id="dash-sim-summary">
                             <!-- 요약 내용 렌더링 -->
                         </ul>
@@ -265,7 +290,7 @@
             </div>
 
             <!-- 5. 포트폴리오 상세 비중 리스트 -->
-            <div class="mt-4">
+            <div class="mt-4 pb-2">
                 <div class="flex justify-between items-center mb-3 px-1">
                     <h3 class="text-lg font-bold text-white">보유 종목 현황</h3>
                 </div>
@@ -284,12 +309,12 @@
                     <i class="fas fa-plus"></i>
                 </button>
             </div>
-            <div id="portfolio-list" class="space-y-6"></div>
+            <div id="portfolio-list" class="space-y-6 pb-2"></div>
         </section>
 
     </main>
 
-    <!-- 하단 탭 바 (2개 탭) -->
+    <!-- 하단 탭 바 -->
     <nav class="absolute bottom-0 w-full bg-bgMain/95 backdrop-blur-xl border-t border-slate-800 pb-safe z-40">
         <div class="flex justify-center items-center h-20 px-4 max-w-md mx-auto">
             <button onclick="switchTab('dashboard')" class="tab-btn w-1/2 h-full flex flex-col items-center justify-center text-brand transition-all relative" data-target="dashboard">
@@ -472,13 +497,13 @@
         const US_TICKERS = ["441640", "491620", "0144l0"];
         const KR_TICKERS = ["498400", "475720"];
         
-        // v1.30: 월초 배당 종목 추가 반영
+        // 월초/월중 배당 설정
         const DIV_SCHEDULE = {
-            "475720": "early",  // RISE 200위클리
-            "491620": "early",  // RISE 미국테크100
-            "0144l0": "early",  // KODEX 미국성장
-            "498400": "mid",    // KODEX 200타겟
-            "441640": "mid"     // KODEX 미국배당
+            "475720": "early",  
+            "491620": "early",  
+            "0144l0": "early",  
+            "498400": "mid",    
+            "441640": "mid"     
         };
 
         /* ==========================================
@@ -492,7 +517,7 @@
             setTimeout(() => document.getElementById('global-loading').style.display = 'none', 300);
         });
 
-        // v1.33: 오프스크린 클론 고화질 캡처 (흐려짐, 엇나감 원천 차단)
+        // v1.34: 고화질 보고서 캡처 기능 (흐려짐 제거, 텍스트 오버레이 정렬 보호)
         async function captureDashboard() {
             const loader = document.getElementById('global-loading');
             const loaderText = document.getElementById('loading-text');
@@ -500,71 +525,54 @@
             loader.style.display = 'flex';
             setTimeout(() => loader.style.opacity = '1', 10);
 
-            try {
-                // 폰트가 완전히 로드될 때까지 대기
-                await document.fonts.ready;
+            // 스크롤 위치에 따른 캡처 잘림 현상 방지
+            window.scrollTo(0, 0);
 
+            try {
+                // 폰트가 렌더링될 때까지 대기
+                await document.fonts.ready;
+                
+                // 캡처 시 흐림 효과(backdrop-blur)를 솔리드 컬러로 강제 변환하는 클래스 주입
+                document.body.classList.add('capture-mode');
+                
                 const originalTarget = document.getElementById('tab-dashboard');
                 
-                // 원본에 헤더 임시 추가
                 const captureHeader = document.getElementById('capture-header');
                 const captureDate = document.getElementById('capture-date');
                 const today = new Date();
                 captureDate.textContent = `${today.getFullYear()}년 ${today.getMonth()+1}월 ${today.getDate()}일 기준`;
                 captureHeader.classList.remove('hidden');
 
-                // DOM 조작이 화면에 반영될 시간 부여
+                // 스타일 변경이 화면에 완전히 적용될 수 있도록 잠시 대기
                 await new Promise(resolve => setTimeout(resolve, 300));
 
-                // 1. 화면 밖(Off-screen)에 캡처 전용 클론 생성
-                const clone = originalTarget.cloneNode(true);
-                clone.style.position = 'absolute';
-                clone.style.top = '-9999px';
-                clone.style.left = '0';
-                clone.style.width = originalTarget.offsetWidth + 'px'; // 모바일 화면 너비 고정
-                clone.style.height = 'auto'; // 내용은 전부 아래로 펼쳐지게
-                clone.style.overflow = 'visible'; // 스크롤바 짤림 방지
-                clone.style.backgroundColor = '#0b1120'; // 명시적 배경색
-                clone.style.padding = '20px'; // 캡처용 넉넉한 여백
-                clone.classList.remove('hidden');
-                
-                // 2. html2canvas의 흐림 버그(backdrop-blur) 원천 차단
-                const allElements = clone.querySelectorAll('*');
-                allElements.forEach(el => {
-                    if (el.className && typeof el.className === 'string') {
-                        // 흐림 효과를 유발하는 클래스 강제 삭제 (반투명 색상만 남김)
-                        el.className = el.className.replace(/backdrop-blur-[a-zxl]+/g, '');
-                        el.className = el.className.replace(/backdrop-blur/g, '');
-                    }
-                });
-
-                document.body.appendChild(clone);
-
-                // 3. 고해상도(Scale: 3)로 캡처 진행
-                const canvas = await html2canvas(clone, {
-                    scale: 3, // 고해상도 설정
+                const canvas = await html2canvas(originalTarget, {
+                    scale: 3, // 고해상도 처리
                     useCORS: true,
                     backgroundColor: '#0b1120',
-                    width: clone.offsetWidth,
-                    height: clone.scrollHeight,
+                    scrollY: 0,
+                    x: 0,
+                    y: 0,
+                    width: originalTarget.offsetWidth,
+                    height: originalTarget.scrollHeight,
                     logging: false
                 });
 
-                // 4. 클론 제거 및 원본 복구
-                document.body.removeChild(clone);
+                // 원상 복구
+                document.body.classList.remove('capture-mode');
                 captureHeader.classList.add('hidden');
 
-                // 5. 파일 다운로드
                 const link = document.createElement('a');
-                link.download = `Income_Snowball_Report_${today.toISOString().slice(0,10).replace(/-/g, '')}.png`;
+                link.download = `Income_Snowball_${today.toISOString().slice(0,10).replace(/-/g, '')}.png`;
                 link.href = canvas.toDataURL('image/png', 1.0);
                 link.click();
                 
                 showToast("고화질 보고서 이미지가 저장되었습니다.");
             } catch (err) {
                 console.error(err);
-                showToast("이미지 캡처에 실패했습니다.");
+                document.body.classList.remove('capture-mode');
                 document.getElementById('capture-header').classList.add('hidden');
+                showToast("이미지 캡처에 실패했습니다.");
             } finally {
                 loaderText.textContent = "데이터 동기화 중..."; 
                 loader.style.opacity = '0';
@@ -963,8 +971,8 @@
                     const color = index < colors.length ? colors[index] : '#64748b';
                     
                     const scheduleBadge = DIV_SCHEDULE[ticker] === "early"
-                        ? '<span class="text-[8px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1 py-[1px] rounded ml-1.5 font-bold tracking-wider leading-none">월초</span>'
-                        : '<span class="text-[8px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1 py-[1px] rounded ml-1.5 font-bold tracking-wider leading-none">월중</span>';
+                        ? '<span class="text-[9px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1.5 py-[2px] rounded font-bold tracking-wider leading-none whitespace-nowrap ml-1.5">월초</span>'
+                        : '<span class="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-[2px] rounded font-bold tracking-wider leading-none whitespace-nowrap ml-1.5">월중</span>';
                     
                     return `
                         <div class="flex items-center justify-between p-3 rounded-2xl hover:bg-slate-800 transition-colors cursor-default gap-2">
@@ -972,8 +980,11 @@
                                 <div class="w-10 h-10 rounded-xl flex-shrink-0 bg-slate-800 flex items-center justify-center text-white font-bold border border-slate-700/50 shadow-sm" style="border-color: ${color}40; background-color: ${color}20; color: ${color}">
                                     ${initial}
                                 </div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="font-bold text-white text-sm mb-0.5 truncate flex items-center">${getTickerName(ticker)} ${scheduleBadge}</p>
+                                <div class="flex-1 min-w-0 flex flex-col justify-center">
+                                    <div class="flex items-center mb-0.5 w-full overflow-hidden">
+                                        <p class="font-bold text-white text-[13px] sm:text-sm truncate flex-shrink">${getTickerName(ticker)}</p>
+                                        <div class="flex-shrink-0">${scheduleBadge}</div>
+                                    </div>
                                     <p class="text-[10px] text-slate-500">${ticker}</p>
                                 </div>
                             </div>
@@ -989,7 +1000,7 @@
             renderDashboardSimulation(mBasePrincipal, mBaseAsset, annualTotalPostTax);
         }
 
-        // 라인 차트 연동 로직
+        // 라인 차트 연동 로직 (v1.34: 캡처 에러 방지를 위한 100% HTML 오버레이 구조로 개편)
         function renderDashboardSimulation(basePrincipal, baseAsset, annualWithoutDrip) {
             let simAccounts = JSON.parse(JSON.stringify(userData.accounts));
             const currentMonth = new Date().getMonth() + 1; 
@@ -1000,6 +1011,7 @@
             for (let m = 1; m <= 12; m++) {
                 let monthlyDivTotal = 0;
                 
+                // 1. 배당금 막대 차트 데이터 산출 및 DRIP 처리
                 simAccounts.forEach(acc => {
                     const accTaxRate = acc.taxRate !== undefined ? acc.taxRate : 0.154;
                     acc.holdings.forEach(h => {
@@ -1021,6 +1033,7 @@
                         }
                     });
 
+                    // 배당 재투자(DRIP) 매수
                     if (m >= currentMonth) {
                         acc.holdings.forEach(h => {
                             if (h.cashBuffer > 0 && h.targetTicker) {
@@ -1047,6 +1060,7 @@
                 
                 history.push(monthlyDivTotal);
 
+                // 2. 라인 차트 데이터(원금, 평가 자산) 세팅
                 if (m <= currentMonth) {
                     lineChartData.push({
                         month: m,
@@ -1084,6 +1098,7 @@
                 return;
             }
 
+            // 막대 차트 렌더링
             const nonZeroHistory = history.filter(v => v > 0);
             const minDiv = nonZeroHistory.length > 0 ? Math.min(...nonZeroHistory) : 0; 
             const maxDiv = Math.max(...history);
@@ -1152,16 +1167,17 @@
 
                 chartHTML += `
                     <div class="flex flex-col items-center justify-end flex-1 h-full relative group min-w-0 px-[1px]">
-                        <span class="text-[7px] sm:text-[8px] mb-1.5 ${valColor} transition-opacity tracking-tighter whitespace-nowrap z-10">${shortVal}</span>
+                        <span class="text-[7px] sm:text-[8px] mb-1.5 ${valColor} whitespace-nowrap z-10 text-center">${shortVal}</span>
                         <div class="w-full ${bgClass} relative hover:opacity-80 transition-opacity cursor-pointer" style="height: ${h}%">
                             <span class="absolute -top-7 sm:-top-8 left-1/2 transform -translate-x-1/2 text-[8px] sm:text-[9px] opacity-0 group-hover:opacity-100 bg-cardBg px-1.5 py-1 rounded-md text-white whitespace-nowrap z-20 shadow-lg border border-slate-700 transition-opacity pointer-events-none">${formatMoney(div)}원</span>
                         </div>
-                        <span class="text-[7px] sm:text-[8px] mt-1 sm:mt-2 ${labelColor}">${m}월</span>
+                        <span class="text-[7px] sm:text-[8px] mt-1 sm:mt-2 ${labelColor} text-center">${m}월</span>
                     </div>
                 `;
             });
             barContainer.innerHTML = chartHTML;
 
+            // v1.34 캡처 레이아웃 붕괴 방지를 위한 절대좌표(HTML) 오버레이 방식 라인 차트 렌더링
             const w = 1000;
             const h_svg = 380; 
             const padT = 80;  
@@ -1184,43 +1200,65 @@
             const getY = (v) => padT + cH - ((v - minY_line) / rY) * cH;
 
             const pathP = `M ${lineChartData.map(d => `${getX(d.month)},${getY(d.principal)}`).join(' L ')}`;
-            
             const trPast = lineChartData.filter(d => d.month <= currentMonth);
             const trFuture = lineChartData.filter(d => d.month >= currentMonth); 
-            
             const pathTRPast = `M ${trPast.map(d => `${getX(d.month)},${getY(d.tr)}`).join(' L ')}`;
             const pathTRFuture = `M ${trFuture.map(d => `${getX(d.month)},${getY(d.tr)}`).join(' L ')}`;
 
+            // 캡처 오류를 막기 위해 SVG 내부의 텍스트와 원을 모두 제거하고, 
+            // 겉을 감싸는 절대좌표 기반의 HTML <div>로 구성 (html2canvas와 완벽히 호환됨)
+            let overlayHtml = '';
             const curD = lineChartData.find(d => d.month === currentMonth);
             const decD = lineChartData[11];
             const fmtLine = (v) => (v/10000).toFixed(1).replace(/\.0$/, '') + '만';
 
-            let lineTextHtml = '';
             if (curD) {
-                lineTextHtml += `<circle cx="${getX(currentMonth)}" cy="${getY(curD.tr)}" r="10" fill="#1e293b" stroke="#10b981" stroke-width="5" />`;
-                let textAnchor = currentMonth === 1 ? "start" : (currentMonth === 12 ? "end" : "middle");
-                lineTextHtml += `<text x="${getX(currentMonth)}" y="${getY(curD.tr) - 25}" fill="#10b981" font-size="34" font-weight="bold" text-anchor="${textAnchor}" font-family="sans-serif">${fmtLine(curD.tr)}</text>`;
+                const px = (getX(currentMonth) / w) * 100;
+                const py = (getY(curD.tr) / h_svg) * 100;
+                
+                let alignClass = "left-1/2 -translate-x-1/2 text-center";
+                let styleStr = `left: ${px}%; top: ${py}%;`;
+                if (currentMonth === 1) {
+                    alignClass = "left-0 text-left";
+                    styleStr = `left: 0; top: ${py}%;`;
+                } else if (currentMonth === 12) {
+                    alignClass = "right-0 text-right";
+                    styleStr = `right: 0; top: ${py}%;`;
+                }
+
+                overlayHtml += `
+                    <div class="absolute w-3.5 h-3.5 bg-[#1e293b] border-[2.5px] border-[#10b981] rounded-full transform -translate-x-1/2 -translate-y-1/2 z-10" style="left: ${px}%; top: ${py}%;"></div>
+                    <div class="absolute ${alignClass} transform -translate-y-full pb-2.5 text-emerald-400 font-bold text-[11px] sm:text-xs z-10 whitespace-nowrap" style="${styleStr}">${fmtLine(curD.tr)}</div>
+                `;
             }
             if (currentMonth < 12 && decD) {
-                lineTextHtml += `<circle cx="${getX(12)}" cy="${getY(decD.tr)}" r="10" fill="#1e293b" stroke="#34d399" stroke-width="5" />`;
-                lineTextHtml += `<text x="${getX(12)}" y="${getY(decD.tr) - 25}" fill="#34d399" font-size="34" font-weight="bold" text-anchor="end" font-family="sans-serif">${fmtLine(decD.tr)}</text>`;
+                const px = (getX(12) / w) * 100;
+                const py = (getY(decD.tr) / h_svg) * 100;
+                overlayHtml += `
+                    <div class="absolute w-3.5 h-3.5 bg-[#1e293b] border-[2.5px] border-[#34d399] rounded-full transform -translate-x-1/2 -translate-y-1/2 z-10" style="left: ${px}%; top: ${py}%;"></div>
+                    <div class="absolute right-0 transform -translate-y-full pb-2.5 text-emerald-400 font-bold text-[11px] sm:text-xs z-10 whitespace-nowrap" style="top: ${py}%;">${fmtLine(decD.tr)}</div>
+                `;
             }
 
-            let xAxisHtml = '';
             for (let i = 1; i <= 12; i++) {
-                xAxisHtml += `<text x="${getX(i)}" y="${h_svg - 10}" fill="#64748b" font-size="22" text-anchor="middle" font-family="sans-serif">${i}월</text>`;
+                const px = (getX(i) / w) * 100;
+                const py = ((h_svg - 25) / h_svg) * 100; 
+                overlayHtml += `<div class="absolute transform -translate-x-1/2 text-[9px] sm:text-[10px] text-slate-500 font-medium z-10" style="left: ${px}%; top: ${py}%;">${i}월</div>`;
             }
 
             const svgLineHTML = `
-                <svg viewBox="0 0 ${w} ${h_svg}" class="w-full h-auto overflow-visible drop-shadow-lg">
-                    <path d="${pathP}" fill="none" stroke="#64748b" stroke-width="5" stroke-dasharray="15,10" opacity="0.6" />
-                    <path d="${pathTRPast}" fill="none" stroke="#10b981" stroke-width="8" stroke-linecap="round" />
-                    <path d="${pathTRFuture}" fill="none" stroke="#34d399" stroke-width="8" stroke-dasharray="15,15" stroke-linecap="round" />
-                    ${lineTextHtml}
-                    ${xAxisHtml}
-                </svg>
+                <div class="relative w-full" style="padding-top: 38%;">
+                    <svg viewBox="0 0 ${w} ${h_svg}" class="absolute top-0 left-0 w-full h-full overflow-visible drop-shadow-lg">
+                        <path d="${pathP}" fill="none" stroke="#64748b" stroke-width="5" stroke-dasharray="15,10" opacity="0.6" />
+                        <path d="${pathTRPast}" fill="none" stroke="#10b981" stroke-width="8" stroke-linecap="round" />
+                        <path d="${pathTRFuture}" fill="none" stroke="#34d399" stroke-width="8" stroke-dasharray="15,15" stroke-linecap="round" />
+                    </svg>
+                    <div class="absolute inset-0 w-full h-full pointer-events-none">
+                        ${overlayHtml}
+                    </div>
+                </div>
                 
-                <div class="flex justify-center gap-x-5 sm:gap-x-8 text-[10px] sm:text-[11px] mt-2 mb-1 w-full">
+                <div class="flex justify-center gap-x-5 sm:gap-x-8 text-[10px] sm:text-[11px] mt-4 mb-1 w-full">
                     <div class="flex items-center gap-1.5 text-slate-400">
                         <div class="w-4 h-0.5 border-t-2 border-dashed border-slate-500"></div> 원금
                     </div>
@@ -1362,8 +1400,8 @@
                         const initial = getTickerName(h.ticker).substring(0, 1);
 
                         const scheduleBadge = DIV_SCHEDULE[h.ticker] === "early"
-                            ? '<span class="text-[8px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1 py-[1px] rounded ml-1.5 font-bold tracking-wider leading-none">월초</span>'
-                            : '<span class="text-[8px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1 py-[1px] rounded ml-1.5 font-bold tracking-wider leading-none">월중</span>';
+                            ? '<span class="text-[9px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1.5 py-[2px] rounded font-bold tracking-wider leading-none whitespace-nowrap ml-1.5">월초</span>'
+                            : '<span class="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-[2px] rounded font-bold tracking-wider leading-none whitespace-nowrap ml-1.5">월중</span>';
 
                         return `
                             <div class="cursor-pointer group py-2" onclick="openEditHoldingModal('${acc.id}', '${h.id}')">
@@ -1374,7 +1412,7 @@
                                         </div>
                                         <div class="flex-1 min-w-0 flex flex-col justify-center">
                                             <div class="flex items-center mb-0.5 w-full overflow-hidden">
-                                                <p class="font-bold text-white text-[13px] sm:text-sm truncate group-hover:text-brand transition-colors flex-shrink">${getTickerName(h.ticker)}</p>
+                                                <p class="font-bold text-white text-[13px] sm:text-sm truncate flex-shrink">${getTickerName(h.ticker)}</p>
                                                 <div class="flex-shrink-0">${scheduleBadge}</div>
                                             </div>
                                             <p class="text-[10px] sm:text-[11px] text-slate-400">${formatMoney(h.quantity)}주 <span class="mx-0.5">·</span> 평단 ${formatMoney(h.avgPrice)}</p>
