@@ -8,6 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- html2canvas (이미지 캡처 라이브러리 추가) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -57,7 +59,7 @@
 
     <div id="global-loading" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-bgMain bg-opacity-95 backdrop-blur-md transition-opacity duration-300">
         <div class="spinner mb-5"></div>
-        <p class="text-brand font-medium animate-pulse text-sm">데이터 동기화 중...</p>
+        <p id="loading-text" class="text-brand font-medium animate-pulse text-sm">데이터 동기화 중...</p>
     </div>
 
     <div id="toast" class="absolute top-6 left-1/2 transform -translate-x-1/2 z-50 bg-slate-800 text-white px-5 py-3 rounded-full shadow-lg border border-slate-700 text-sm font-medium transition-all duration-300 opacity-0 pointer-events-none flex items-center gap-3">
@@ -75,10 +77,14 @@
                 <p class="text-[10px] text-slate-500 font-medium" id="last-update-time">데이터 갱신: -</p>
             </div>
         </div>
-        <div class="flex items-center gap-2 sm:gap-3">
-            <div class="text-[10px] font-bold text-brand bg-brand/10 px-2 py-1 rounded-lg border border-brand/20 shadow-sm tracking-wide hidden sm:block">
-                by 에이미 v1.31
+        <div class="flex items-center gap-1.5 sm:gap-2">
+            <div class="text-[10px] font-bold text-brand bg-brand/10 px-2 py-1 rounded-lg border border-brand/20 shadow-sm tracking-wide hidden sm:block mr-1">
+                by 에이미 v1.32
             </div>
+            <!-- v1.32: 화면 캡처(보고서 저장) 버튼 추가 -->
+            <button onclick="captureDashboard()" class="w-8 h-8 rounded-full bg-cardBg flex items-center justify-center text-slate-400 hover:text-emerald-400 hover:bg-cardBgLight transition-colors shadow-sm" title="월간 보고서 이미지 저장">
+                <i class="fas fa-camera text-xs"></i>
+            </button>
             <button onclick="forceSyncData()" class="w-8 h-8 rounded-full bg-cardBg flex items-center justify-center text-slate-400 hover:text-brand hover:bg-cardBgLight transition-colors shadow-sm" title="수동 동기화">
                 <i class="fas fa-sync-alt text-xs"></i>
             </button>
@@ -94,8 +100,21 @@
     <main class="flex-1 overflow-y-auto pb-28 px-4 sm:px-5 pt-2">
         
         <!-- 제1관: 대시보드 -->
-        <section id="tab-dashboard" class="tab-content active space-y-5">
+        <section id="tab-dashboard" class="tab-content active space-y-5 rounded-3xl p-1">
             
+            <!-- v1.32: 캡처 시에만 나타나는 보고서 전용 헤더 -->
+            <div id="capture-header" class="hidden pb-5 mb-2 pl-2">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-brand/20 flex items-center justify-center text-brand border border-brand/30">
+                        <i class="fas fa-layer-group text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold tracking-tight text-white">Income Snowball Report</h1>
+                        <p class="text-[11px] text-slate-400 font-medium mt-0.5" id="capture-date"></p>
+                    </div>
+                </div>
+            </div>
+
             <!-- 1. 메인 월 배당금 카드 -->
             <div class="bg-gradient-to-br from-blue-600 to-blue-700 rounded-[28px] p-6 sm:p-7 glow-card relative overflow-hidden">
                 <div class="absolute -top-12 -right-12 w-40 h-40 bg-white opacity-5 rounded-full blur-2xl"></div>
@@ -454,7 +473,7 @@
         const US_TICKERS = ["441640", "491620", "0144l0"];
         const KR_TICKERS = ["498400", "475720"];
         
-        // v1.31: 월초 배당 종목 추가 반영 (491620, 0144l0 월초)
+        // v1.30: 월초 배당 종목 추가 반영
         const DIV_SCHEDULE = {
             "475720": "early",  // RISE 200위클리
             "491620": "early",  // RISE 미국테크100
@@ -464,7 +483,7 @@
         };
 
         /* ==========================================
-           2. 초기화 및 API 통신
+           2. 초기화 및 API 통신, 캡처 기능
            ========================================== */
         document.addEventListener('DOMContentLoaded', async () => {
             loadLocalData();
@@ -473,6 +492,52 @@
             document.getElementById('global-loading').style.opacity = '0';
             setTimeout(() => document.getElementById('global-loading').style.display = 'none', 300);
         });
+
+        // v1.32: 화면 전체 캡처 기능 추가
+        async function captureDashboard() {
+            const loader = document.getElementById('global-loading');
+            const loaderText = document.getElementById('loading-text');
+            loaderText.textContent = "보고서 생성 중...";
+            loader.style.display = 'flex';
+            setTimeout(() => loader.style.opacity = '1', 10);
+
+            try {
+                const target = document.getElementById('tab-dashboard');
+                
+                // 캡처용 타이틀 표시
+                const captureHeader = document.getElementById('capture-header');
+                const captureDate = document.getElementById('capture-date');
+                const today = new Date();
+                captureDate.textContent = `${today.getFullYear()}년 ${today.getMonth()+1}월 ${today.getDate()}일 기준`;
+                captureHeader.classList.remove('hidden');
+
+                // 렌더링 안정화를 위한 짧은 대기
+                await new Promise(resolve => setTimeout(resolve, 300));
+
+                const canvas = await html2canvas(target, {
+                    scale: 2, 
+                    useCORS: true,
+                    backgroundColor: '#0b1120', 
+                    windowWidth: target.scrollWidth,
+                    windowHeight: target.scrollHeight
+                });
+
+                const link = document.createElement('a');
+                link.download = `Income_Snowball_${today.toISOString().slice(0,10).replace(/-/g, '')}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                
+                showToast("보고서 이미지가 저장되었습니다.");
+            } catch (err) {
+                console.error(err);
+                showToast("이미지 캡처에 실패했습니다.");
+            } finally {
+                document.getElementById('capture-header').classList.add('hidden');
+                loaderText.textContent = "데이터 동기화 중..."; 
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 300);
+            }
+        }
 
         async function forceSyncData() {
             const loader = document.getElementById('global-loading');
@@ -862,7 +927,6 @@
                     const initial = getTickerName(ticker).substring(0, 1);
                     const color = index < colors.length ? colors[index] : '#64748b';
                     
-                    // v1.31: 사파리 버그 해결을 위해 flex 레이아웃 구조 개선 (텍스트와 배지 분리)
                     const scheduleBadge = DIV_SCHEDULE[ticker] === "early"
                         ? '<span class="text-[9px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1.5 py-[2px] rounded font-bold tracking-wider leading-none whitespace-nowrap">월초</span>'
                         : '<span class="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-[2px] rounded font-bold tracking-wider leading-none whitespace-nowrap">월중</span>';
@@ -873,9 +937,9 @@
                                 <div class="w-10 h-10 rounded-xl flex-shrink-0 bg-slate-800 flex items-center justify-center text-white font-bold border border-slate-700/50 shadow-sm" style="border-color: ${color}40; background-color: ${color}20; color: ${color}">
                                     ${initial}
                                 </div>
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex items-center gap-1.5 mb-0.5 w-full">
-                                        <p class="font-bold text-white text-[13px] sm:text-sm truncate">${getTickerName(ticker)}</p>
+                                <div class="flex-1 min-w-0 flex flex-col justify-center">
+                                    <div class="flex items-center gap-1.5 mb-0.5 max-w-full">
+                                        <p class="font-bold text-white text-[13px] sm:text-sm truncate flex-shrink">${getTickerName(ticker)}</p>
                                         <div class="flex-shrink-0">${scheduleBadge}</div>
                                     </div>
                                     <p class="text-[10px] text-slate-500">${ticker}</p>
@@ -1265,10 +1329,10 @@
 
                         const initial = getTickerName(h.ticker).substring(0, 1);
 
-                        // v1.31: 사파리 flex 버그 완벽 대응 (텍스트와 배지가 같은 flex 컨테이너에 있도록 수정)
+                        // v1.31: 플렉스(Flex) 구조를 수정하여 배지가 절대 짤리거나 숨겨지지 않도록 개선
                         const scheduleBadge = DIV_SCHEDULE[h.ticker] === "early"
-                            ? '<span class="text-[9px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1.5 py-[2px] rounded font-bold tracking-wider leading-none whitespace-nowrap">월초</span>'
-                            : '<span class="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-[2px] rounded font-bold tracking-wider leading-none whitespace-nowrap">월중</span>';
+                            ? '<span class="text-[9px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1.5 py-[2px] rounded font-bold tracking-wider leading-none whitespace-nowrap ml-1.5">월초</span>'
+                            : '<span class="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-[2px] rounded font-bold tracking-wider leading-none whitespace-nowrap ml-1.5">월중</span>';
 
                         return `
                             <div class="cursor-pointer group py-2" onclick="openEditHoldingModal('${acc.id}', '${h.id}')">
@@ -1277,9 +1341,9 @@
                                         <div class="w-10 h-10 rounded-xl flex-shrink-0 bg-slate-800 flex items-center justify-center text-slate-300 font-bold border border-slate-700 group-hover:border-brand/50 transition-colors">
                                             ${initial}
                                         </div>
-                                        <div class="flex-1 min-w-0">
-                                            <div class="flex items-center gap-1.5 mb-0.5 w-full">
-                                                <p class="font-bold text-white text-[13px] sm:text-sm truncate group-hover:text-brand transition-colors">${getTickerName(h.ticker)}</p>
+                                        <div class="flex-1 min-w-0 flex flex-col justify-center">
+                                            <div class="flex items-center mb-0.5 w-full overflow-hidden">
+                                                <p class="font-bold text-white text-[13px] sm:text-sm truncate group-hover:text-brand transition-colors flex-shrink">${getTickerName(h.ticker)}</p>
                                                 <div class="flex-shrink-0">${scheduleBadge}</div>
                                             </div>
                                             <p class="text-[10px] sm:text-[11px] text-slate-400">${formatMoney(h.quantity)}주 <span class="mx-0.5">·</span> 평단 ${formatMoney(h.avgPrice)}</p>
