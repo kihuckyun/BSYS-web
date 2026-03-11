@@ -79,9 +79,8 @@
         </div>
         <div class="flex items-center gap-1.5 sm:gap-2">
             <div class="text-[10px] font-bold text-brand bg-brand/10 px-2 py-1 rounded-lg border border-brand/20 shadow-sm tracking-wide hidden sm:block mr-1">
-                by 에이미 v1.32
+                by 에이미 v1.33
             </div>
-            <!-- v1.32: 화면 캡처(보고서 저장) 버튼 추가 -->
             <button onclick="captureDashboard()" class="w-8 h-8 rounded-full bg-cardBg flex items-center justify-center text-slate-400 hover:text-emerald-400 hover:bg-cardBgLight transition-colors shadow-sm" title="월간 보고서 이미지 저장">
                 <i class="fas fa-camera text-xs"></i>
             </button>
@@ -103,14 +102,14 @@
         <section id="tab-dashboard" class="tab-content active space-y-5 rounded-3xl p-1">
             
             <!-- v1.32: 캡처 시에만 나타나는 보고서 전용 헤더 -->
-            <div id="capture-header" class="hidden pb-5 mb-2 pl-2">
+            <div id="capture-header" class="hidden pb-5 mb-2 pl-2 mt-4">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-brand/20 flex items-center justify-center text-brand border border-brand/30">
-                        <i class="fas fa-layer-group text-lg"></i>
+                    <div class="w-12 h-12 rounded-full bg-brand/20 flex items-center justify-center text-brand border border-brand/30">
+                        <i class="fas fa-layer-group text-xl"></i>
                     </div>
                     <div>
-                        <h1 class="text-xl font-bold tracking-tight text-white">Income Snowball Report</h1>
-                        <p class="text-[11px] text-slate-400 font-medium mt-0.5" id="capture-date"></p>
+                        <h1 class="text-2xl font-bold tracking-tight text-white mb-0.5">Income Snowball Report</h1>
+                        <p class="text-xs text-slate-400 font-medium" id="capture-date"></p>
                     </div>
                 </div>
             </div>
@@ -290,7 +289,7 @@
 
     </main>
 
-    <!-- 하단 탭 바 -->
+    <!-- 하단 탭 바 (2개 탭) -->
     <nav class="absolute bottom-0 w-full bg-bgMain/95 backdrop-blur-xl border-t border-slate-800 pb-safe z-40">
         <div class="flex justify-center items-center h-20 px-4 max-w-md mx-auto">
             <button onclick="switchTab('dashboard')" class="tab-btn w-1/2 h-full flex flex-col items-center justify-center text-brand transition-all relative" data-target="dashboard">
@@ -493,46 +492,80 @@
             setTimeout(() => document.getElementById('global-loading').style.display = 'none', 300);
         });
 
-        // v1.32: 화면 전체 캡처 기능 추가
+        // v1.33: 오프스크린 클론 고화질 캡처 (흐려짐, 엇나감 원천 차단)
         async function captureDashboard() {
             const loader = document.getElementById('global-loading');
             const loaderText = document.getElementById('loading-text');
-            loaderText.textContent = "보고서 생성 중...";
+            loaderText.textContent = "고화질 보고서 생성 중...";
             loader.style.display = 'flex';
             setTimeout(() => loader.style.opacity = '1', 10);
 
             try {
-                const target = document.getElementById('tab-dashboard');
+                // 폰트가 완전히 로드될 때까지 대기
+                await document.fonts.ready;
+
+                const originalTarget = document.getElementById('tab-dashboard');
                 
-                // 캡처용 타이틀 표시
+                // 원본에 헤더 임시 추가
                 const captureHeader = document.getElementById('capture-header');
                 const captureDate = document.getElementById('capture-date');
                 const today = new Date();
                 captureDate.textContent = `${today.getFullYear()}년 ${today.getMonth()+1}월 ${today.getDate()}일 기준`;
                 captureHeader.classList.remove('hidden');
 
-                // 렌더링 안정화를 위한 짧은 대기
+                // DOM 조작이 화면에 반영될 시간 부여
                 await new Promise(resolve => setTimeout(resolve, 300));
 
-                const canvas = await html2canvas(target, {
-                    scale: 2, 
-                    useCORS: true,
-                    backgroundColor: '#0b1120', 
-                    windowWidth: target.scrollWidth,
-                    windowHeight: target.scrollHeight
+                // 1. 화면 밖(Off-screen)에 캡처 전용 클론 생성
+                const clone = originalTarget.cloneNode(true);
+                clone.style.position = 'absolute';
+                clone.style.top = '-9999px';
+                clone.style.left = '0';
+                clone.style.width = originalTarget.offsetWidth + 'px'; // 모바일 화면 너비 고정
+                clone.style.height = 'auto'; // 내용은 전부 아래로 펼쳐지게
+                clone.style.overflow = 'visible'; // 스크롤바 짤림 방지
+                clone.style.backgroundColor = '#0b1120'; // 명시적 배경색
+                clone.style.padding = '20px'; // 캡처용 넉넉한 여백
+                clone.classList.remove('hidden');
+                
+                // 2. html2canvas의 흐림 버그(backdrop-blur) 원천 차단
+                const allElements = clone.querySelectorAll('*');
+                allElements.forEach(el => {
+                    if (el.className && typeof el.className === 'string') {
+                        // 흐림 효과를 유발하는 클래스 강제 삭제 (반투명 색상만 남김)
+                        el.className = el.className.replace(/backdrop-blur-[a-zxl]+/g, '');
+                        el.className = el.className.replace(/backdrop-blur/g, '');
+                    }
                 });
 
+                document.body.appendChild(clone);
+
+                // 3. 고해상도(Scale: 3)로 캡처 진행
+                const canvas = await html2canvas(clone, {
+                    scale: 3, // 고해상도 설정
+                    useCORS: true,
+                    backgroundColor: '#0b1120',
+                    width: clone.offsetWidth,
+                    height: clone.scrollHeight,
+                    logging: false
+                });
+
+                // 4. 클론 제거 및 원본 복구
+                document.body.removeChild(clone);
+                captureHeader.classList.add('hidden');
+
+                // 5. 파일 다운로드
                 const link = document.createElement('a');
-                link.download = `Income_Snowball_${today.toISOString().slice(0,10).replace(/-/g, '')}.png`;
-                link.href = canvas.toDataURL('image/png');
+                link.download = `Income_Snowball_Report_${today.toISOString().slice(0,10).replace(/-/g, '')}.png`;
+                link.href = canvas.toDataURL('image/png', 1.0);
                 link.click();
                 
-                showToast("보고서 이미지가 저장되었습니다.");
+                showToast("고화질 보고서 이미지가 저장되었습니다.");
             } catch (err) {
                 console.error(err);
                 showToast("이미지 캡처에 실패했습니다.");
-            } finally {
                 document.getElementById('capture-header').classList.add('hidden');
+            } finally {
                 loaderText.textContent = "데이터 동기화 중..."; 
                 loader.style.opacity = '0';
                 setTimeout(() => loader.style.display = 'none', 300);
@@ -541,6 +574,8 @@
 
         async function forceSyncData() {
             const loader = document.getElementById('global-loading');
+            const loaderText = document.getElementById('loading-text');
+            loaderText.textContent = "데이터 동기화 중...";
             loader.style.display = 'flex';
             setTimeout(() => {
                 loader.style.opacity = '1';
@@ -928,8 +963,8 @@
                     const color = index < colors.length ? colors[index] : '#64748b';
                     
                     const scheduleBadge = DIV_SCHEDULE[ticker] === "early"
-                        ? '<span class="text-[9px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1.5 py-[2px] rounded font-bold tracking-wider leading-none whitespace-nowrap">월초</span>'
-                        : '<span class="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-[2px] rounded font-bold tracking-wider leading-none whitespace-nowrap">월중</span>';
+                        ? '<span class="text-[8px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1 py-[1px] rounded ml-1.5 font-bold tracking-wider leading-none">월초</span>'
+                        : '<span class="text-[8px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1 py-[1px] rounded ml-1.5 font-bold tracking-wider leading-none">월중</span>';
                     
                     return `
                         <div class="flex items-center justify-between p-3 rounded-2xl hover:bg-slate-800 transition-colors cursor-default gap-2">
@@ -937,11 +972,8 @@
                                 <div class="w-10 h-10 rounded-xl flex-shrink-0 bg-slate-800 flex items-center justify-center text-white font-bold border border-slate-700/50 shadow-sm" style="border-color: ${color}40; background-color: ${color}20; color: ${color}">
                                     ${initial}
                                 </div>
-                                <div class="flex-1 min-w-0 flex flex-col justify-center">
-                                    <div class="flex items-center gap-1.5 mb-0.5 max-w-full">
-                                        <p class="font-bold text-white text-[13px] sm:text-sm truncate flex-shrink">${getTickerName(ticker)}</p>
-                                        <div class="flex-shrink-0">${scheduleBadge}</div>
-                                    </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="font-bold text-white text-sm mb-0.5 truncate flex items-center">${getTickerName(ticker)} ${scheduleBadge}</p>
                                     <p class="text-[10px] text-slate-500">${ticker}</p>
                                 </div>
                             </div>
@@ -1329,10 +1361,9 @@
 
                         const initial = getTickerName(h.ticker).substring(0, 1);
 
-                        // v1.31: 플렉스(Flex) 구조를 수정하여 배지가 절대 짤리거나 숨겨지지 않도록 개선
                         const scheduleBadge = DIV_SCHEDULE[h.ticker] === "early"
-                            ? '<span class="text-[9px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1.5 py-[2px] rounded font-bold tracking-wider leading-none whitespace-nowrap ml-1.5">월초</span>'
-                            : '<span class="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-[2px] rounded font-bold tracking-wider leading-none whitespace-nowrap ml-1.5">월중</span>';
+                            ? '<span class="text-[8px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1 py-[1px] rounded ml-1.5 font-bold tracking-wider leading-none">월초</span>'
+                            : '<span class="text-[8px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1 py-[1px] rounded ml-1.5 font-bold tracking-wider leading-none">월중</span>';
 
                         return `
                             <div class="cursor-pointer group py-2" onclick="openEditHoldingModal('${acc.id}', '${h.id}')">
