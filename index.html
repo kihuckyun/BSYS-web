@@ -77,7 +77,7 @@
         </div>
         <div class="flex items-center gap-2 sm:gap-3">
             <div class="text-[10px] font-bold text-brand bg-brand/10 px-2 py-1 rounded-lg border border-brand/20 shadow-sm tracking-wide hidden sm:block">
-                by 에이미 v1.28
+                by 에이미 v1.31
             </div>
             <button onclick="forceSyncData()" class="w-8 h-8 rounded-full bg-cardBg flex items-center justify-center text-slate-400 hover:text-brand hover:bg-cardBgLight transition-colors shadow-sm" title="수동 동기화">
                 <i class="fas fa-sync-alt text-xs"></i>
@@ -104,12 +104,29 @@
                 </div>
                 
                 <div class="relative z-10">
-                    <h2 class="text-sm text-blue-100 font-medium mb-1 opacity-90 flex items-center gap-2">
-                        이번 달 배당금 <span class="text-[9px] bg-blue-800/60 px-1.5 py-0.5 rounded text-blue-100 font-bold border border-blue-500/30">세후/실제우선</span>
-                    </h2>
-                    <div class="flex items-baseline gap-1.5 mb-5 mt-2">
-                        <span class="text-4xl sm:text-5xl font-extrabold text-white tracking-tight" id="dash-monthly-div">0</span>
-                        <span class="text-xl font-bold text-blue-200">원</span>
+                    <div class="flex justify-between items-start mb-5">
+                        <!-- 좌측: 전체 배당금액 -->
+                        <div>
+                            <h2 class="text-sm text-blue-100 font-medium mb-1 opacity-90 flex items-center gap-2">
+                                이번 달 배당금 <span class="text-[9px] bg-blue-800/60 px-1.5 py-0.5 rounded text-blue-100 font-bold border border-blue-500/30">세후/실제우선</span>
+                            </h2>
+                            <div class="flex items-baseline gap-1.5 mt-2">
+                                <span class="text-4xl sm:text-5xl font-extrabold text-white tracking-tight" id="dash-monthly-div">0</span>
+                                <span class="text-xl font-bold text-blue-200">원</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 우측: 월초/월중 배당 분리 가이드 -->
+                        <div class="flex flex-col gap-1.5 items-end">
+                            <div class="bg-blue-800/50 border border-blue-500/30 rounded-xl px-2.5 py-1.5 backdrop-blur-sm text-right min-w-[70px]">
+                                <p class="text-[9px] text-blue-200 font-medium opacity-90 mb-0.5 tracking-wide">월초 배당</p>
+                                <p class="text-[11px] font-bold text-white tracking-tight" id="dash-monthly-early-div">0원</p>
+                            </div>
+                            <div class="bg-blue-800/50 border border-blue-500/30 rounded-xl px-2.5 py-1.5 backdrop-blur-sm text-right min-w-[70px]">
+                                <p class="text-[9px] text-blue-200 font-medium opacity-90 mb-0.5 tracking-wide">월중 배당</p>
+                                <p class="text-[11px] font-bold text-white tracking-tight" id="dash-monthly-mid-div">0원</p>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="flex justify-between items-center text-sm bg-blue-800/40 rounded-2xl p-4 backdrop-blur-sm border border-blue-500/30">
@@ -436,6 +453,15 @@
 
         const US_TICKERS = ["441640", "491620", "0144l0"];
         const KR_TICKERS = ["498400", "475720"];
+        
+        // v1.31: 월초 배당 종목 추가 반영 (491620, 0144l0 월초)
+        const DIV_SCHEDULE = {
+            "475720": "early",  // RISE 200위클리
+            "491620": "early",  // RISE 미국테크100
+            "0144l0": "early",  // KODEX 미국성장
+            "498400": "mid",    // KODEX 200타겟
+            "441640": "mid"     // KODEX 미국배당
+        };
 
         /* ==========================================
            2. 초기화 및 API 통신
@@ -617,6 +643,9 @@
             let totalInvested = 0;
             let totalAccumulatedDiv = 0;
             let monthlyDiv = 0;
+            let monthlyDivEarly = 0; 
+            let monthlyDivMid = 0;   
+            
             let prevMonthlyDiv = 0; 
             let nextMonthlyDivBase = 0; 
             let totalItems = 0;
@@ -686,7 +715,16 @@
                     totalAsset += currentAsset;
                     totalInvested += invested;
                     totalAccumulatedDiv += accDivReceived;
+                    
                     monthlyDiv += currentDiv;
+                    
+                    const schedule = DIV_SCHEDULE[h.ticker] || "mid";
+                    if (schedule === "early") {
+                        monthlyDivEarly += currentDiv;
+                    } else {
+                        monthlyDivMid += currentDiv;
+                    }
+                    
                     prevMonthlyDiv += prevDiv;
                     nextMonthlyDivBase += nextDiv;
                     totalItems++;
@@ -708,6 +746,9 @@
             });
 
             document.getElementById('dash-monthly-div').textContent = formatMoney(monthlyDiv);
+            document.getElementById('dash-monthly-early-div').textContent = formatMoney(monthlyDivEarly) + '원';
+            document.getElementById('dash-monthly-mid-div').textContent = formatMoney(monthlyDivMid) + '원';
+            
             document.getElementById('dash-prev-div').textContent = formatMoney(prevMonthlyDiv) + '원';
             document.getElementById('dash-next-div').textContent = formatMoney(nextMonthlyDivBase + nextMonthAddedDiv) + '원';
             
@@ -821,6 +862,11 @@
                     const initial = getTickerName(ticker).substring(0, 1);
                     const color = index < colors.length ? colors[index] : '#64748b';
                     
+                    // v1.31: 사파리 버그 해결을 위해 flex 레이아웃 구조 개선 (텍스트와 배지 분리)
+                    const scheduleBadge = DIV_SCHEDULE[ticker] === "early"
+                        ? '<span class="text-[9px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1.5 py-[2px] rounded font-bold tracking-wider leading-none whitespace-nowrap">월초</span>'
+                        : '<span class="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-[2px] rounded font-bold tracking-wider leading-none whitespace-nowrap">월중</span>';
+                    
                     return `
                         <div class="flex items-center justify-between p-3 rounded-2xl hover:bg-slate-800 transition-colors cursor-default gap-2">
                             <div class="flex items-center gap-3 flex-1 min-w-0">
@@ -828,7 +874,10 @@
                                     ${initial}
                                 </div>
                                 <div class="flex-1 min-w-0">
-                                    <p class="font-bold text-white text-sm mb-0.5 truncate">${getTickerName(ticker)}</p>
+                                    <div class="flex items-center gap-1.5 mb-0.5 w-full">
+                                        <p class="font-bold text-white text-[13px] sm:text-sm truncate">${getTickerName(ticker)}</p>
+                                        <div class="flex-shrink-0">${scheduleBadge}</div>
+                                    </div>
                                     <p class="text-[10px] text-slate-500">${ticker}</p>
                                 </div>
                             </div>
@@ -844,7 +893,7 @@
             renderDashboardSimulation(mBasePrincipal, mBaseAsset, annualTotalPostTax);
         }
 
-        // 라인 차트 연동 로직 (v1.28: 바 차트 텍스트 오버플로우 방지)
+        // 라인 차트 연동 로직
         function renderDashboardSimulation(basePrincipal, baseAsset, annualWithoutDrip) {
             let simAccounts = JSON.parse(JSON.stringify(userData.accounts));
             const currentMonth = new Date().getMonth() + 1; 
@@ -939,7 +988,6 @@
                 return;
             }
 
-            // 막대 차트 렌더링
             const nonZeroHistory = history.filter(v => v > 0);
             const minDiv = nonZeroHistory.length > 0 ? Math.min(...nonZeroHistory) : 0; 
             const maxDiv = Math.max(...history);
@@ -1006,7 +1054,6 @@
                     shortVal = formatMoney(div);
                 }
 
-                // v1.28: 텍스트 오버플로우를 막기 위해 텍스트 크기 7px로 축소 (모바일 겹침 해결)
                 chartHTML += `
                     <div class="flex flex-col items-center justify-end flex-1 h-full relative group min-w-0 px-[1px]">
                         <span class="text-[7px] sm:text-[8px] mb-1.5 ${valColor} transition-opacity tracking-tighter whitespace-nowrap z-10">${shortVal}</span>
@@ -1019,7 +1066,6 @@
             });
             barContainer.innerHTML = chartHTML;
 
-            // 라인 차트 렌더링
             const w = 1000;
             const h_svg = 380; 
             const padT = 80;  
@@ -1219,6 +1265,11 @@
 
                         const initial = getTickerName(h.ticker).substring(0, 1);
 
+                        // v1.31: 사파리 flex 버그 완벽 대응 (텍스트와 배지가 같은 flex 컨테이너에 있도록 수정)
+                        const scheduleBadge = DIV_SCHEDULE[h.ticker] === "early"
+                            ? '<span class="text-[9px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1.5 py-[2px] rounded font-bold tracking-wider leading-none whitespace-nowrap">월초</span>'
+                            : '<span class="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-[2px] rounded font-bold tracking-wider leading-none whitespace-nowrap">월중</span>';
+
                         return `
                             <div class="cursor-pointer group py-2" onclick="openEditHoldingModal('${acc.id}', '${h.id}')">
                                 <div class="flex items-start justify-between gap-2">
@@ -1227,7 +1278,10 @@
                                             ${initial}
                                         </div>
                                         <div class="flex-1 min-w-0">
-                                            <p class="font-bold text-white text-[13px] sm:text-sm mb-0.5 group-hover:text-brand transition-colors truncate">${getTickerName(h.ticker)}</p>
+                                            <div class="flex items-center gap-1.5 mb-0.5 w-full">
+                                                <p class="font-bold text-white text-[13px] sm:text-sm truncate group-hover:text-brand transition-colors">${getTickerName(h.ticker)}</p>
+                                                <div class="flex-shrink-0">${scheduleBadge}</div>
+                                            </div>
                                             <p class="text-[10px] sm:text-[11px] text-slate-400">${formatMoney(h.quantity)}주 <span class="mx-0.5">·</span> 평단 ${formatMoney(h.avgPrice)}</p>
                                         </div>
                                     </div>
