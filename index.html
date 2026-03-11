@@ -54,7 +54,7 @@
         .glow-card { box-shadow: 0 10px 30px -10px rgba(59, 130, 246, 0.3); }
         circle { transition: stroke-dasharray 1s ease-in-out, stroke-dashoffset 1s ease-in-out; }
 
-        /* v1.34 캡처 전용 스타일: 흐림 제거, 솔리드 컬러 치환, 그림자 제거 (화질 깨짐 및 어두워짐 방지) */
+        /* 캡처 전용 스타일: 흐림 제거, 솔리드 컬러 치환, 그림자 제거 */
         .capture-mode * {
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
@@ -104,7 +104,7 @@
         </div>
         <div class="flex items-center gap-1.5 sm:gap-2">
             <div class="text-[10px] font-bold text-brand bg-brand/10 px-2 py-1 rounded-lg border border-brand/20 shadow-sm tracking-wide hidden sm:block mr-1">
-                by 에이미 v1.34
+                by 에이미 v1.35
             </div>
             <button onclick="captureDashboard()" class="w-8 h-8 rounded-full bg-cardBg flex items-center justify-center text-slate-400 hover:text-emerald-400 hover:bg-cardBgLight transition-colors shadow-sm" title="월간 보고서 이미지 저장">
                 <i class="fas fa-camera text-xs"></i>
@@ -250,13 +250,13 @@
                         </h3>
                     </div>
                     
-                    <!-- 차트 컨테이너 (v1.34 절대좌표 HTML 오버레이 구조 적용) -->
-                    <div class="w-full mt-2 flex flex-col items-center relative" id="dash-line-chart">
+                    <!-- 차트 컨테이너 -->
+                    <div class="w-full mt-2 flex flex-col items-center" id="dash-line-chart">
                         <!-- 라인 차트 렌더링 -->
                     </div>
 
                     <!-- 시뮬레이션 요약 텍스트 -->
-                    <div class="mt-3 pt-3 border-t border-slate-700/50 w-full">
+                    <div class="mt-3 pt-3 border-t border-slate-700/50">
                         <ul class="text-[11px] sm:text-xs space-y-2.5 text-slate-400" id="dash-sim-summary">
                             <!-- 요약 내용 렌더링 -->
                         </ul>
@@ -315,7 +315,7 @@
     </main>
 
     <!-- 하단 탭 바 -->
-    <nav class="absolute bottom-0 w-full bg-bgMain/95 backdrop-blur-xl border-t border-slate-800 pb-safe z-40">
+    <nav class="absolute bottom-0 w-full bg-bgMain/95 backdrop-blur-xl border-t border-slate-800 pb-safe z-40" id="bottom-nav">
         <div class="flex justify-center items-center h-20 px-4 max-w-md mx-auto">
             <button onclick="switchTab('dashboard')" class="tab-btn w-1/2 h-full flex flex-col items-center justify-center text-brand transition-all relative" data-target="dashboard">
                 <i class="fas fa-th-large text-xl mb-1.5"></i>
@@ -497,7 +497,6 @@
         const US_TICKERS = ["441640", "491620", "0144l0"];
         const KR_TICKERS = ["498400", "475720"];
         
-        // 월초/월중 배당 설정
         const DIV_SCHEDULE = {
             "475720": "early",  
             "491620": "early",  
@@ -517,7 +516,7 @@
             setTimeout(() => document.getElementById('global-loading').style.display = 'none', 300);
         });
 
-        // v1.34: 고화질 보고서 캡처 기능 (흐려짐 제거, 텍스트 오버레이 정렬 보호)
+        // v1.35: html2canvas 렌더링 한계(흐려짐 및 절대좌표 어긋남) 완벽 대응 캡처 엔진
         async function captureDashboard() {
             const loader = document.getElementById('global-loading');
             const loaderText = document.getElementById('loading-text');
@@ -525,45 +524,76 @@
             loader.style.display = 'flex';
             setTimeout(() => loader.style.opacity = '1', 10);
 
-            // 스크롤 위치에 따른 캡처 잘림 현상 방지
             window.scrollTo(0, 0);
 
             try {
-                // 폰트가 렌더링될 때까지 대기
                 await document.fonts.ready;
                 
-                // 캡처 시 흐림 효과(backdrop-blur)를 솔리드 컬러로 강제 변환하는 클래스 주입
+                // 1. 캡처 모드 클래스 부여 (CSS를 통한 흐림 효과 강제 제거)
                 document.body.classList.add('capture-mode');
                 
                 const originalTarget = document.getElementById('tab-dashboard');
                 
+                // 2. 캡처용 헤더 표시 및 하단 네비게이션 숨김
                 const captureHeader = document.getElementById('capture-header');
                 const captureDate = document.getElementById('capture-date');
                 const today = new Date();
                 captureDate.textContent = `${today.getFullYear()}년 ${today.getMonth()+1}월 ${today.getDate()}일 기준`;
                 captureHeader.classList.remove('hidden');
+                document.getElementById('bottom-nav').style.display = 'none';
 
-                // 스타일 변경이 화면에 완전히 적용될 수 있도록 잠시 대기
-                await new Promise(resolve => setTimeout(resolve, 300));
+                // 스타일 변경 후 렌더링될 시간 확보
+                await new Promise(resolve => setTimeout(resolve, 500));
 
-                const canvas = await html2canvas(originalTarget, {
-                    scale: 3, // 고해상도 처리
-                    useCORS: true,
-                    backgroundColor: '#0b1120',
-                    scrollY: 0,
-                    x: 0,
-                    y: 0,
-                    width: originalTarget.offsetWidth,
-                    height: originalTarget.scrollHeight,
-                    logging: false
+                // 3. 스크롤 밖의 요소까지 완벽하게 그리기 위해 클론 생성
+                const clone = originalTarget.cloneNode(true);
+                clone.style.position = 'absolute';
+                clone.style.top = '-9999px';
+                clone.style.left = '0';
+                clone.style.width = originalTarget.offsetWidth + 'px'; 
+                clone.style.height = 'auto'; 
+                clone.style.overflow = 'visible'; 
+                clone.style.backgroundColor = '#0b1120'; 
+                clone.style.padding = '20px'; 
+                clone.style.margin = '0';
+                
+                // html2canvas 오류 방지를 위한 클래스 클리닝 (흐림 효과)
+                const allElements = clone.querySelectorAll('*');
+                allElements.forEach(el => {
+                    if (el.className && typeof el.className === 'string') {
+                        el.className = el.className.replace(/backdrop-blur-[a-zxl]+/g, '');
+                        el.className = el.className.replace(/backdrop-blur/g, '');
+                    }
                 });
 
-                // 원상 복구
-                document.body.classList.remove('capture-mode');
-                captureHeader.classList.add('hidden');
+                document.body.appendChild(clone);
 
+                // 4. 고해상도(Scale: 3) 캔버스 렌더링
+                const canvas = await html2canvas(clone, {
+                    scale: 3, 
+                    useCORS: true,
+                    backgroundColor: '#0b1120',
+                    width: clone.offsetWidth,
+                    height: clone.scrollHeight,
+                    logging: false,
+                    onclone: (clonedDoc) => {
+                        // html2canvas 내부의 복제본에서도 추가적인 강제 스타일 적용
+                        const innerClone = clonedDoc.querySelector('#tab-dashboard');
+                        if(innerClone) {
+                            innerClone.style.transform = 'none';
+                        }
+                    }
+                });
+
+                // 5. 뒷정리
+                document.body.removeChild(clone);
+                captureHeader.classList.add('hidden');
+                document.getElementById('bottom-nav').style.display = 'block';
+                document.body.classList.remove('capture-mode');
+
+                // 6. 파일 다운로드
                 const link = document.createElement('a');
-                link.download = `Income_Snowball_${today.toISOString().slice(0,10).replace(/-/g, '')}.png`;
+                link.download = `Income_Snowball_Report_${today.toISOString().slice(0,10).replace(/-/g, '')}.png`;
                 link.href = canvas.toDataURL('image/png', 1.0);
                 link.click();
                 
@@ -572,6 +602,7 @@
                 console.error(err);
                 document.body.classList.remove('capture-mode');
                 document.getElementById('capture-header').classList.add('hidden');
+                document.getElementById('bottom-nav').style.display = 'block';
                 showToast("이미지 캡처에 실패했습니다.");
             } finally {
                 loaderText.textContent = "데이터 동기화 중..."; 
@@ -974,16 +1005,17 @@
                         ? '<span class="text-[9px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1.5 py-[2px] rounded font-bold tracking-wider leading-none whitespace-nowrap ml-1.5">월초</span>'
                         : '<span class="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-[2px] rounded font-bold tracking-wider leading-none whitespace-nowrap ml-1.5">월중</span>';
                     
+                    // v1.35: html2canvas 텍스트 말줄임표(truncate) 무시 버그 해결을 위한 절대 너비 부여
                     return `
                         <div class="flex items-center justify-between p-3 rounded-2xl hover:bg-slate-800 transition-colors cursor-default gap-2">
-                            <div class="flex items-center gap-3 flex-1 min-w-0">
+                            <div class="flex items-center gap-3 flex-1 min-w-0 pr-2" style="max-width: 65%;">
                                 <div class="w-10 h-10 rounded-xl flex-shrink-0 bg-slate-800 flex items-center justify-center text-white font-bold border border-slate-700/50 shadow-sm" style="border-color: ${color}40; background-color: ${color}20; color: ${color}">
                                     ${initial}
                                 </div>
                                 <div class="flex-1 min-w-0 flex flex-col justify-center">
-                                    <div class="flex items-center mb-0.5 w-full overflow-hidden">
-                                        <p class="font-bold text-white text-[13px] sm:text-sm truncate flex-shrink">${getTickerName(ticker)}</p>
-                                        <div class="flex-shrink-0">${scheduleBadge}</div>
+                                    <div class="flex items-center mb-0.5 w-full">
+                                        <p class="font-bold text-white text-[13px] sm:text-sm truncate inline-block" style="max-width: 70%;">${getTickerName(ticker)}</p>
+                                        <div class="inline-block flex-shrink-0">${scheduleBadge}</div>
                                     </div>
                                     <p class="text-[10px] text-slate-500">${ticker}</p>
                                 </div>
@@ -1000,7 +1032,6 @@
             renderDashboardSimulation(mBasePrincipal, mBaseAsset, annualTotalPostTax);
         }
 
-        // 라인 차트 연동 로직 (v1.34: 캡처 에러 방지를 위한 100% HTML 오버레이 구조로 개편)
         function renderDashboardSimulation(basePrincipal, baseAsset, annualWithoutDrip) {
             let simAccounts = JSON.parse(JSON.stringify(userData.accounts));
             const currentMonth = new Date().getMonth() + 1; 
@@ -1011,7 +1042,6 @@
             for (let m = 1; m <= 12; m++) {
                 let monthlyDivTotal = 0;
                 
-                // 1. 배당금 막대 차트 데이터 산출 및 DRIP 처리
                 simAccounts.forEach(acc => {
                     const accTaxRate = acc.taxRate !== undefined ? acc.taxRate : 0.154;
                     acc.holdings.forEach(h => {
@@ -1033,7 +1063,6 @@
                         }
                     });
 
-                    // 배당 재투자(DRIP) 매수
                     if (m >= currentMonth) {
                         acc.holdings.forEach(h => {
                             if (h.cashBuffer > 0 && h.targetTicker) {
@@ -1060,7 +1089,6 @@
                 
                 history.push(monthlyDivTotal);
 
-                // 2. 라인 차트 데이터(원금, 평가 자산) 세팅
                 if (m <= currentMonth) {
                     lineChartData.push({
                         month: m,
@@ -1098,7 +1126,6 @@
                 return;
             }
 
-            // 막대 차트 렌더링
             const nonZeroHistory = history.filter(v => v > 0);
             const minDiv = nonZeroHistory.length > 0 ? Math.min(...nonZeroHistory) : 0; 
             const maxDiv = Math.max(...history);
@@ -1167,17 +1194,15 @@
 
                 chartHTML += `
                     <div class="flex flex-col items-center justify-end flex-1 h-full relative group min-w-0 px-[1px]">
-                        <span class="text-[7px] sm:text-[8px] mb-1.5 ${valColor} whitespace-nowrap z-10 text-center">${shortVal}</span>
-                        <div class="w-full ${bgClass} relative hover:opacity-80 transition-opacity cursor-pointer" style="height: ${h}%">
-                            <span class="absolute -top-7 sm:-top-8 left-1/2 transform -translate-x-1/2 text-[8px] sm:text-[9px] opacity-0 group-hover:opacity-100 bg-cardBg px-1.5 py-1 rounded-md text-white whitespace-nowrap z-20 shadow-lg border border-slate-700 transition-opacity pointer-events-none">${formatMoney(div)}원</span>
-                        </div>
-                        <span class="text-[7px] sm:text-[8px] mt-1 sm:mt-2 ${labelColor} text-center">${m}월</span>
+                        <span class="text-[7px] sm:text-[8px] mb-1.5 ${valColor} whitespace-nowrap z-10 text-center w-full block overflow-visible">${shortVal}</span>
+                        <div class="w-full ${bgClass} relative hover:opacity-80 transition-opacity cursor-pointer" style="height: ${h}%"></div>
+                        <span class="text-[7px] sm:text-[8px] mt-1 sm:mt-2 ${labelColor} text-center w-full block">${m}월</span>
                     </div>
                 `;
             });
             barContainer.innerHTML = chartHTML;
 
-            // v1.34 캡처 레이아웃 붕괴 방지를 위한 절대좌표(HTML) 오버레이 방식 라인 차트 렌더링
+            // v1.35 캡처 왜곡 방지를 위한 안전한 HTML 오버레이 구조
             const w = 1000;
             const h_svg = 380; 
             const padT = 80;  
@@ -1205,8 +1230,6 @@
             const pathTRPast = `M ${trPast.map(d => `${getX(d.month)},${getY(d.tr)}`).join(' L ')}`;
             const pathTRFuture = `M ${trFuture.map(d => `${getX(d.month)},${getY(d.tr)}`).join(' L ')}`;
 
-            // 캡처 오류를 막기 위해 SVG 내부의 텍스트와 원을 모두 제거하고, 
-            // 겉을 감싸는 절대좌표 기반의 HTML <div>로 구성 (html2canvas와 완벽히 호환됨)
             let overlayHtml = '';
             const curD = lineChartData.find(d => d.month === currentMonth);
             const decD = lineChartData[11];
@@ -1216,34 +1239,31 @@
                 const px = (getX(currentMonth) / w) * 100;
                 const py = (getY(curD.tr) / h_svg) * 100;
                 
-                let alignClass = "left-1/2 -translate-x-1/2 text-center";
-                let styleStr = `left: ${px}%; top: ${py}%;`;
+                let textStyle = `left: ${px}%; top: ${py}%; width: 100px; margin-left: -50px; margin-top: -24px; text-align: center;`;
                 if (currentMonth === 1) {
-                    alignClass = "left-0 text-left";
-                    styleStr = `left: 0; top: ${py}%;`;
+                    textStyle = `left: ${px}%; top: ${py}%; width: 100px; margin-left: -5px; margin-top: -24px; text-align: left;`;
                 } else if (currentMonth === 12) {
-                    alignClass = "right-0 text-right";
-                    styleStr = `right: 0; top: ${py}%;`;
+                    textStyle = `left: ${px}%; top: ${py}%; width: 100px; margin-left: -95px; margin-top: -24px; text-align: right;`;
                 }
 
                 overlayHtml += `
-                    <div class="absolute w-3.5 h-3.5 bg-[#1e293b] border-[2.5px] border-[#10b981] rounded-full transform -translate-x-1/2 -translate-y-1/2 z-10" style="left: ${px}%; top: ${py}%;"></div>
-                    <div class="absolute ${alignClass} transform -translate-y-full pb-2.5 text-emerald-400 font-bold text-[11px] sm:text-xs z-10 whitespace-nowrap" style="${styleStr}">${fmtLine(curD.tr)}</div>
+                    <div class="absolute w-3.5 h-3.5 bg-[#1e293b] border-[2.5px] border-[#10b981] rounded-full z-10" style="left: ${px}%; top: ${py}%; margin-left: -7px; margin-top: -7px;"></div>
+                    <div class="absolute text-emerald-400 font-bold text-[11px] sm:text-xs z-10 whitespace-nowrap" style="${textStyle}">${fmtLine(curD.tr)}</div>
                 `;
             }
             if (currentMonth < 12 && decD) {
                 const px = (getX(12) / w) * 100;
                 const py = (getY(decD.tr) / h_svg) * 100;
                 overlayHtml += `
-                    <div class="absolute w-3.5 h-3.5 bg-[#1e293b] border-[2.5px] border-[#34d399] rounded-full transform -translate-x-1/2 -translate-y-1/2 z-10" style="left: ${px}%; top: ${py}%;"></div>
-                    <div class="absolute right-0 transform -translate-y-full pb-2.5 text-emerald-400 font-bold text-[11px] sm:text-xs z-10 whitespace-nowrap" style="top: ${py}%;">${fmtLine(decD.tr)}</div>
+                    <div class="absolute w-3.5 h-3.5 bg-[#1e293b] border-[2.5px] border-[#34d399] rounded-full z-10" style="left: ${px}%; top: ${py}%; margin-left: -7px; margin-top: -7px;"></div>
+                    <div class="absolute text-emerald-400 font-bold text-[11px] sm:text-xs z-10 whitespace-nowrap" style="left: ${px}%; top: ${py}%; width: 100px; margin-left: -95px; margin-top: -24px; text-align: right;">${fmtLine(decD.tr)}</div>
                 `;
             }
 
             for (let i = 1; i <= 12; i++) {
                 const px = (getX(i) / w) * 100;
-                const py = ((h_svg - 25) / h_svg) * 100; 
-                overlayHtml += `<div class="absolute transform -translate-x-1/2 text-[9px] sm:text-[10px] text-slate-500 font-medium z-10" style="left: ${px}%; top: ${py}%;">${i}월</div>`;
+                const py = ((h_svg - 15) / h_svg) * 100; 
+                overlayHtml += `<div class="absolute text-[9px] sm:text-[10px] text-slate-500 font-medium z-10" style="left: ${px}%; top: ${py}%; width: 40px; margin-left: -20px; text-align: center;">${i}월</div>`;
             }
 
             const svgLineHTML = `
@@ -1410,10 +1430,10 @@
                                         <div class="w-10 h-10 rounded-xl flex-shrink-0 bg-slate-800 flex items-center justify-center text-slate-300 font-bold border border-slate-700 group-hover:border-brand/50 transition-colors">
                                             ${initial}
                                         </div>
-                                        <div class="flex-1 min-w-0 flex flex-col justify-center">
-                                            <div class="flex items-center mb-0.5 w-full overflow-hidden">
-                                                <p class="font-bold text-white text-[13px] sm:text-sm truncate flex-shrink">${getTickerName(h.ticker)}</p>
-                                                <div class="flex-shrink-0">${scheduleBadge}</div>
+                                        <div class="flex-1 min-w-0 flex flex-col justify-center pr-2" style="max-width: 60%;">
+                                            <div class="flex items-center mb-0.5 w-full">
+                                                <p class="font-bold text-white text-[13px] sm:text-sm truncate inline-block" style="max-width: 75%;">${getTickerName(h.ticker)}</p>
+                                                <div class="inline-block flex-shrink-0">${scheduleBadge}</div>
                                             </div>
                                             <p class="text-[10px] sm:text-[11px] text-slate-400">${formatMoney(h.quantity)}주 <span class="mx-0.5">·</span> 평단 ${formatMoney(h.avgPrice)}</p>
                                         </div>
