@@ -54,7 +54,6 @@
         .glow-card { box-shadow: 0 10px 30px -10px rgba(59, 130, 246, 0.3); }
         circle { transition: stroke-dasharray 1s ease-in-out, stroke-dashoffset 1s ease-in-out; }
 
-        /* 캡처 전용 스타일: 흐림 제거, 솔리드 컬러 치환, 그림자 제거 */
         .capture-mode * {
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
@@ -65,12 +64,17 @@
         .capture-mode .bg-cardBg { background-color: #1e293b !important; border-color: #334155 !important; }
         .capture-mode .bg-blue-800\/40,
         .capture-mode .bg-blue-800\/50,
-        .capture-mode .bg-blue-900\/30 { background-color: #1e3a8a !important; border-color: #3b82f6 !important; }
-        .capture-mode .bg-brand\/10 { background-color: #172554 !important; border-color: #3b82f6 !important; }
+        .capture-mode .bg-blue-900\/30,
+        .capture-mode .bg-blue-900\/50,
+        .capture-mode .bg-blue-900\/60 { background-color: #1e3a8a !important; border-color: #3b82f6 !important; }
+        .capture-mode .bg-brand\/10,
+        .capture-mode .bg-brand\/20 { background-color: #172554 !important; border-color: #3b82f6 !important; }
         .capture-mode .bg-blue-500\/10,
         .capture-mode .bg-blue-500\/20 { background-color: #1e3a8a !important; border-color: #3b82f6 !important; }
         .capture-mode .bg-emerald-900\/50,
-        .capture-mode .bg-emerald-500\/20 { background-color: #064e3b !important; border-color: #10b981 !important; }
+        .capture-mode .bg-emerald-500\/20,
+        .capture-mode .bg-emerald-900\/60,
+        .capture-mode .bg-teal-500\/20 { background-color: #064e3b !important; border-color: #10b981 !important; }
         .capture-mode .bg-red-900\/40 { background-color: #7f1d1d !important; border-color: #ef4444 !important; }
         .capture-mode .border-slate-800\/60,
         .capture-mode .border-slate-700\/50 { border-color: #334155 !important; }
@@ -80,19 +84,19 @@
         .capture-mode .drop-shadow-lg { filter: none !important; }
     </style>
 </head>
-<body class="antialiased font-sans h-screen flex flex-col relative overflow-hidden">
+<body class="antialiased font-sans relative pb-28">
 
-    <div id="global-loading" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-bgMain bg-opacity-95 backdrop-blur-md transition-opacity duration-300">
+    <div id="global-loading" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-bgMain bg-opacity-95 backdrop-blur-md transition-opacity duration-300">
         <div class="spinner mb-5"></div>
         <p id="loading-text" class="text-brand font-medium animate-pulse text-sm">데이터 동기화 중...</p>
     </div>
 
-    <div id="toast" class="absolute top-6 left-1/2 transform -translate-x-1/2 z-50 bg-slate-800 text-white px-5 py-3 rounded-full shadow-lg border border-slate-700 text-sm font-medium transition-all duration-300 opacity-0 pointer-events-none flex items-center gap-3">
+    <div id="toast" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 bg-slate-800 text-white px-5 py-3 rounded-full shadow-lg border border-slate-700 text-sm font-medium transition-all duration-300 opacity-0 pointer-events-none flex items-center gap-3">
         <i class="fas fa-check-circle text-brand"></i>
         <span id="toast-msg">알림 메시지</span>
     </div>
 
-    <header class="pt-12 pb-4 px-6 bg-bgMain sticky top-0 z-10 flex justify-between items-center z-40">
+    <header class="pt-12 pb-4 px-6 bg-bgMain sticky top-0 z-40 flex justify-between items-center w-full">
         <div class="flex items-center gap-3">
             <div class="w-8 h-8 rounded-full bg-brand/20 flex items-center justify-center text-brand">
                 <i class="fas fa-layer-group text-sm"></i>
@@ -104,7 +108,7 @@
         </div>
         <div class="flex items-center gap-1.5 sm:gap-2">
             <div class="text-[10px] font-bold text-brand bg-brand/10 px-2 py-1 rounded-lg border border-brand/20 shadow-sm tracking-wide hidden sm:block mr-1">
-                by 에이미 v1.35
+                by 에이미 v1.44
             </div>
             <button onclick="captureDashboard()" class="w-8 h-8 rounded-full bg-cardBg flex items-center justify-center text-slate-400 hover:text-emerald-400 hover:bg-cardBgLight transition-colors shadow-sm" title="월간 보고서 이미지 저장">
                 <i class="fas fa-camera text-xs"></i>
@@ -121,12 +125,11 @@
         </div>
     </header>
 
-    <main class="flex-1 overflow-y-auto pb-28 px-4 sm:px-5 pt-2">
+    <main class="w-full px-4 sm:px-5 pt-2">
         
         <!-- 제1관: 대시보드 -->
         <section id="tab-dashboard" class="tab-content active space-y-5 rounded-3xl p-1 bg-bgMain">
             
-            <!-- 캡처 시에만 나타나는 보고서 전용 헤더 -->
             <div id="capture-header" class="hidden pb-4 mb-2 pl-2 pt-4">
                 <div class="flex items-center gap-3">
                     <div class="w-12 h-12 rounded-full bg-brand/20 flex items-center justify-center text-brand border border-brand/30">
@@ -148,7 +151,6 @@
                 
                 <div class="relative z-10">
                     <div class="flex justify-between items-start mb-5">
-                        <!-- 좌측: 전체 배당금액 -->
                         <div>
                             <h2 class="text-sm text-blue-100 font-medium mb-1 opacity-90 flex items-center gap-2">
                                 이번 달 배당금 <span class="text-[9px] bg-blue-800/60 px-1.5 py-0.5 rounded text-blue-100 font-bold border border-blue-500/30">세후/실제우선</span>
@@ -159,7 +161,6 @@
                             </div>
                         </div>
                         
-                        <!-- 우측: 월초/월중 배당 분리 가이드 -->
                         <div class="flex flex-col gap-1.5 items-end">
                             <div class="bg-blue-800/50 border border-blue-500/30 rounded-xl px-2.5 py-1.5 backdrop-blur-sm text-right min-w-[70px]">
                                 <p class="text-[9px] text-blue-200 font-medium opacity-90 mb-0.5 tracking-wide">월초 배당</p>
@@ -185,7 +186,7 @@
                 </div>
             </div>
 
-            <!-- 2. 서브 지표 (TR + 평가자산/투자원금) -->
+            <!-- 2. 서브 지표 -->
             <div class="bg-cardBg rounded-[24px] p-5 border border-slate-800/60 shadow-sm relative overflow-hidden">
                 <div class="absolute top-0 right-0 w-32 h-32 bg-brand opacity-[0.03] rounded-full blur-xl transform translate-x-10 -translate-y-10"></div>
                 <div class="relative z-10 w-full">
@@ -216,32 +217,33 @@
                 </div>
             </div>
 
-            <!-- 3. 자산 구성 및 월별 배당 차트 통합 뷰 -->
+            <!-- 3. 자산 구성 및 월별 차트 통합 -->
             <div class="bg-cardBg rounded-[28px] p-5 sm:p-7 border border-slate-800/60 shadow-lg">
-                <!-- 상단: 자산 구성 도넛 차트 -->
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-sm font-bold text-white">자산 구성</h3>
                 </div>
+                <div class="flex items-center justify-between mb-8" id="dash-combined-donut"></div>
                 
-                <div class="flex items-center justify-between mb-8" id="dash-combined-donut">
-                    <!-- 도넛 차트와 레전드가 렌더링됩니다. -->
-                </div>
-                
-                <!-- 하단: 월별 배당 막대 차트 -->
                 <div class="pt-6 border-t border-slate-700/50">
-                    <div class="flex justify-between items-center mb-5">
-                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                            예상 배당금 <span class="text-[10px] text-slate-400 font-normal ml-1">(단위: 원)</span>
-                        </h3>
+                    <!-- v1.44: 막대그래프 상단 범례 추가 -->
+                    <div class="flex justify-between items-end mb-4">
+                        <div>
+                            <h3 class="text-sm font-bold text-white flex items-center gap-2 mb-2.5">
+                                예상 배당금 <span class="text-[10px] text-slate-400 font-normal ml-1">(단위: 원)</span>
+                            </h3>
+                            <div class="flex items-center gap-2.5 text-[8.5px] sm:text-[9px] text-slate-400">
+                                <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-blue-500"></span> 기본수량</div>
+                                <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-teal-400"></span> DRIP 추가</div>
+                                <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-purple-400"></span> DCA 추가</div>
+                            </div>
+                        </div>
                         <div class="text-[10px] bg-slate-800 px-2 py-1 rounded text-slate-300">세후 적용</div>
                     </div>
-                    
-                    <div class="relative h-44 sm:h-52 flex items-end justify-between gap-[3px] sm:gap-1.5 px-0.5 mb-2" id="dash-sim-chart">
-                        <!-- 막대 차트 렌더링 -->
-                    </div>
+
+                    <div class="relative h-44 sm:h-52 flex items-end justify-between gap-[3px] sm:gap-1.5 px-0.5 mb-2" id="dash-sim-chart"></div>
+                    <ul class="text-[11px] sm:text-xs text-slate-400 mt-5 pt-4 border-t border-slate-700/50" id="dash-bar-summary"></ul>
                 </div>
 
-                <!-- 하단: 신규 자산 성장 시뮬레이션 라인 차트 -->
                 <div class="pt-6 border-t border-slate-700/50 mt-6 flex flex-col">
                     <div class="flex justify-between items-center mb-1">
                         <h3 class="text-sm font-bold text-white flex items-center gap-2">
@@ -249,17 +251,9 @@
                             <span class="text-[9px] bg-emerald-900/50 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/30 font-bold ml-1 tracking-wide">DRIP 적용</span>
                         </h3>
                     </div>
-                    
-                    <!-- 차트 컨테이너 -->
-                    <div class="w-full mt-2 flex flex-col items-center" id="dash-line-chart">
-                        <!-- 라인 차트 렌더링 -->
-                    </div>
-
-                    <!-- 시뮬레이션 요약 텍스트 -->
-                    <div class="mt-3 pt-3 border-t border-slate-700/50">
-                        <ul class="text-[11px] sm:text-xs space-y-2.5 text-slate-400" id="dash-sim-summary">
-                            <!-- 요약 내용 렌더링 -->
-                        </ul>
+                    <div class="w-full mt-2 flex flex-col items-center relative" id="dash-line-chart"></div>
+                    <div class="mt-3 pt-3 border-t border-slate-700/50 w-full">
+                        <ul class="text-[11px] sm:text-xs space-y-2.5 text-slate-400" id="dash-sim-summary"></ul>
                     </div>
                 </div>
             </div>
@@ -315,7 +309,7 @@
     </main>
 
     <!-- 하단 탭 바 -->
-    <nav class="absolute bottom-0 w-full bg-bgMain/95 backdrop-blur-xl border-t border-slate-800 pb-safe z-40" id="bottom-nav">
+    <nav class="fixed bottom-0 left-0 w-full bg-bgMain/95 backdrop-blur-xl border-t border-slate-800 pb-safe z-40" id="bottom-nav">
         <div class="flex justify-center items-center h-20 px-4 max-w-md mx-auto">
             <button onclick="switchTab('dashboard')" class="tab-btn w-1/2 h-full flex flex-col items-center justify-center text-brand transition-all relative" data-target="dashboard">
                 <i class="fas fa-th-large text-xl mb-1.5"></i>
@@ -398,6 +392,17 @@
                             <label class="block text-[11px] text-slate-400 mb-1.5 font-medium ml-1">수량 (주)</label>
                             <input type="number" id="input-quantity" oninput="updateExpectedDividends()" placeholder="100" class="w-full max-w-full bg-bgMain border border-slate-600 rounded-xl px-3 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-brand transition-all text-sm appearance-none">
                         </div>
+                    </div>
+                    
+                    <div class="mt-3 pt-3 border-t border-slate-600/50">
+                        <label class="block text-[11px] text-slate-400 mb-1.5 font-medium ml-1 flex items-center gap-1.5">
+                            <i class="fas fa-calendar-plus text-emerald-400"></i> 월 적립식 매수 (DCA)
+                        </label>
+                        <div class="relative">
+                            <input type="number" id="input-dca-amount" placeholder="매월 추가 투자금 (예: 500000)" class="w-full max-w-full bg-bgMain border border-slate-600 rounded-xl px-3 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-all text-sm appearance-none pr-12">
+                            <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-[10px] text-slate-500 font-bold">원/월</span>
+                        </div>
+                        <p class="text-[9px] text-slate-500 mt-1.5 px-1 leading-tight">입력하신 금액은 연말까지의 배당 및 총자산 시뮬레이션 그래프에 자동으로 누적 합산됩니다.</p>
                     </div>
                 </div>
                 
@@ -516,7 +521,6 @@
             setTimeout(() => document.getElementById('global-loading').style.display = 'none', 300);
         });
 
-        // v1.35: html2canvas 렌더링 한계(흐려짐 및 절대좌표 어긋남) 완벽 대응 캡처 엔진
         async function captureDashboard() {
             const loader = document.getElementById('global-loading');
             const loaderText = document.getElementById('loading-text');
@@ -529,12 +533,10 @@
             try {
                 await document.fonts.ready;
                 
-                // 1. 캡처 모드 클래스 부여 (CSS를 통한 흐림 효과 강제 제거)
                 document.body.classList.add('capture-mode');
                 
                 const originalTarget = document.getElementById('tab-dashboard');
                 
-                // 2. 캡처용 헤더 표시 및 하단 네비게이션 숨김
                 const captureHeader = document.getElementById('capture-header');
                 const captureDate = document.getElementById('capture-date');
                 const today = new Date();
@@ -542,10 +544,8 @@
                 captureHeader.classList.remove('hidden');
                 document.getElementById('bottom-nav').style.display = 'none';
 
-                // 스타일 변경 후 렌더링될 시간 확보
                 await new Promise(resolve => setTimeout(resolve, 500));
 
-                // 3. 스크롤 밖의 요소까지 완벽하게 그리기 위해 클론 생성
                 const clone = originalTarget.cloneNode(true);
                 clone.style.position = 'absolute';
                 clone.style.top = '-9999px';
@@ -557,7 +557,6 @@
                 clone.style.padding = '20px'; 
                 clone.style.margin = '0';
                 
-                // html2canvas 오류 방지를 위한 클래스 클리닝 (흐림 효과)
                 const allElements = clone.querySelectorAll('*');
                 allElements.forEach(el => {
                     if (el.className && typeof el.className === 'string') {
@@ -568,7 +567,6 @@
 
                 document.body.appendChild(clone);
 
-                // 4. 고해상도(Scale: 3) 캔버스 렌더링
                 const canvas = await html2canvas(clone, {
                     scale: 3, 
                     useCORS: true,
@@ -577,7 +575,6 @@
                     height: clone.scrollHeight,
                     logging: false,
                     onclone: (clonedDoc) => {
-                        // html2canvas 내부의 복제본에서도 추가적인 강제 스타일 적용
                         const innerClone = clonedDoc.querySelector('#tab-dashboard');
                         if(innerClone) {
                             innerClone.style.transform = 'none';
@@ -585,13 +582,11 @@
                     }
                 });
 
-                // 5. 뒷정리
                 document.body.removeChild(clone);
                 captureHeader.classList.add('hidden');
-                document.getElementById('bottom-nav').style.display = 'block';
+                document.getElementById('bottom-nav').style.display = 'flex';
                 document.body.classList.remove('capture-mode');
 
-                // 6. 파일 다운로드
                 const link = document.createElement('a');
                 link.download = `Income_Snowball_Report_${today.toISOString().slice(0,10).replace(/-/g, '')}.png`;
                 link.href = canvas.toDataURL('image/png', 1.0);
@@ -602,7 +597,7 @@
                 console.error(err);
                 document.body.classList.remove('capture-mode');
                 document.getElementById('capture-header').classList.add('hidden');
-                document.getElementById('bottom-nav').style.display = 'block';
+                document.getElementById('bottom-nav').style.display = 'flex';
                 showToast("이미지 캡처에 실패했습니다.");
             } finally {
                 loaderText.textContent = "데이터 동기화 중..."; 
@@ -765,6 +760,20 @@
             };
             reader.readAsText(file);
         }
+
+        window.toggleDripDone = function(accId, hId, month) {
+            const acc = userData.accounts.find(a => a.id === accId);
+            if (!acc) return;
+            const h = acc.holdings.find(holding => holding.id === hId);
+            if (!h) return;
+
+            if (!h.dripStatus) h.dripStatus = {};
+            h.dripStatus[month] = true;
+            
+            saveLocalData();
+            renderAll();
+            showToast("재투자(DRIP) 매수 사이클이 완료되었습니다!");
+        };
 
         /* ==========================================
            4. UI 렌더링 로직
@@ -1002,25 +1011,26 @@
                     const color = index < colors.length ? colors[index] : '#64748b';
                     
                     const scheduleBadge = DIV_SCHEDULE[ticker] === "early"
-                        ? '<span class="text-[9px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1.5 py-[2px] rounded font-bold tracking-wider leading-none whitespace-nowrap ml-1.5">월초</span>'
-                        : '<span class="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-[2px] rounded font-bold tracking-wider leading-none whitespace-nowrap ml-1.5">월중</span>';
+                        ? '<span class="text-[8px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1.5 py-[3px] rounded font-bold tracking-widest leading-none whitespace-nowrap shadow-sm">월초</span>'
+                        : '<span class="text-[8px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-[3px] rounded font-bold tracking-widest leading-none whitespace-nowrap shadow-sm">월중</span>';
                     
-                    // v1.35: html2canvas 텍스트 말줄임표(truncate) 무시 버그 해결을 위한 절대 너비 부여
                     return `
-                        <div class="flex items-center justify-between p-3 rounded-2xl hover:bg-slate-800 transition-colors cursor-default gap-2">
-                            <div class="flex items-center gap-3 flex-1 min-w-0 pr-2" style="max-width: 65%;">
-                                <div class="w-10 h-10 rounded-xl flex-shrink-0 bg-slate-800 flex items-center justify-center text-white font-bold border border-slate-700/50 shadow-sm" style="border-color: ${color}40; background-color: ${color}20; color: ${color}">
-                                    ${initial}
+                        <div class="flex items-center justify-between p-3 rounded-2xl hover:bg-slate-800 transition-colors cursor-default gap-3">
+                            <div class="flex items-center gap-3 flex-1 min-w-0 pr-1">
+                                <div class="flex flex-col items-center gap-1.5 flex-shrink-0 w-10">
+                                    <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-white font-bold border border-slate-700/50 shadow-sm" style="border-color: ${color}40; background-color: ${color}20; color: ${color}">
+                                        ${initial}
+                                    </div>
+                                    ${scheduleBadge}
                                 </div>
                                 <div class="flex-1 min-w-0 flex flex-col justify-center">
                                     <div class="flex items-center mb-0.5 w-full">
-                                        <p class="font-bold text-white text-[13px] sm:text-sm truncate inline-block" style="max-width: 70%;">${getTickerName(ticker)}</p>
-                                        <div class="inline-block flex-shrink-0">${scheduleBadge}</div>
+                                        <p class="font-bold text-white text-xs sm:text-[13px] tracking-tight truncate w-full">${getTickerName(ticker)}</p>
                                     </div>
                                     <p class="text-[10px] text-slate-500">${ticker}</p>
                                 </div>
                             </div>
-                            <div class="text-right flex-shrink-0 pl-2">
+                            <div class="text-right flex-shrink-0 pl-1">
                                 <p class="font-bold text-white text-sm mb-0.5">${formatMoney(amount)}원</p>
                                 <p class="text-[11px] font-bold" style="color: ${color}">${pct}%</p>
                             </div>
@@ -1032,16 +1042,56 @@
             renderDashboardSimulation(mBasePrincipal, mBaseAsset, annualTotalPostTax);
         }
 
+        // v1.44: 막대그래프 구역 분할 (Stacked Bar Chart)를 위한 시뮬레이션 엔진 업그레이드
         function renderDashboardSimulation(basePrincipal, baseAsset, annualWithoutDrip) {
             let simAccounts = JSON.parse(JSON.stringify(userData.accounts));
             const currentMonth = new Date().getMonth() + 1; 
             
             let history = []; 
             let lineChartData = [];
+            
+            let currentSimPrincipal = basePrincipal;
+
+            // 시뮬레이션을 위한 초기 수량 분리 세팅
+            simAccounts.forEach(acc => {
+                acc.holdings.forEach(h => {
+                    h.baseQty = h.quantity; // 순수 원래 가지고 있던 수량
+                    h.dripQty = 0;          // DRIP으로 늘어난 수량
+                    h.dcaQty = 0;           // DCA로 늘어난 수량
+                    h.cashBuffer = 0;
+                    h.dcaRemainder = 0;
+                });
+            });
 
             for (let m = 1; m <= 12; m++) {
-                let monthlyDivTotal = 0;
+                let mBaseDiv = 0;
+                let mDripDiv = 0;
+                let mDcaDiv = 0;
+                let mTotalDiv = 0;
                 
+                // 1. DCA 매수 적용 (미래 월)
+                if (m > currentMonth) {
+                    simAccounts.forEach(acc => {
+                        acc.holdings.forEach(h => {
+                            if (h.dcaAmount && h.dcaAmount > 0) {
+                                const mData = marketData[h.ticker];
+                                if (mData && mData.price > 0) {
+                                    currentSimPrincipal += h.dcaAmount; 
+                                    h.dcaRemainder += h.dcaAmount;
+                                    
+                                    const sharesToBuy = Math.floor(h.dcaRemainder / mData.price);
+                                    if (sharesToBuy > 0) {
+                                        h.dcaQty += sharesToBuy;
+                                        h.quantity += sharesToBuy; // 전체 수량 동기화
+                                        h.dcaRemainder -= (sharesToBuy * mData.price);
+                                    }
+                                }
+                            }
+                        });
+                    });
+                }
+                
+                // 2. 배당금 계산 (구역별 분리)
                 simAccounts.forEach(acc => {
                     const accTaxRate = acc.taxRate !== undefined ? acc.taxRate : 0.154;
                     acc.holdings.forEach(h => {
@@ -1051,19 +1101,36 @@
                             const origAcc = userData.accounts.find(a => a.id === acc.id);
                             const origH = origAcc ? origAcc.holdings.find(oh => oh.id === h.id) : null;
                             const actualRecord = origH && origH.monthlyDividends && origH.monthlyDividends[m] ? origH.monthlyDividends[m].amount : null;
-                            const expected = h.quantity * mData.div * (1 - actualTaxRate);
-                            const div = (actualRecord !== null && actualRecord !== undefined) ? actualRecord : expected;
                             
-                            monthlyDivTotal += div;
+                            let bDiv = 0, drDiv = 0, dcDiv = 0, tDiv = 0;
+
+                            if (actualRecord !== null && actualRecord !== undefined && m <= currentMonth) {
+                                // 수동 기입된 과거 기록은 기본 배당(Base)으로 일괄 취급
+                                tDiv = actualRecord;
+                                bDiv = actualRecord;
+                            } else {
+                                // 미래 예상 배당금은 출처에 따라 정확히 3등분 계산
+                                bDiv = (h.baseQty || h.quantity) * mData.div * (1 - actualTaxRate);
+                                drDiv = (h.dripQty || 0) * mData.div * (1 - actualTaxRate);
+                                dcDiv = (h.dcaQty || 0) * mData.div * (1 - actualTaxRate);
+                                tDiv = bDiv + drDiv + dcDiv;
+                            }
+                            
+                            mBaseDiv += bDiv;
+                            mDripDiv += drDiv;
+                            mDcaDiv += dcDiv;
+                            mTotalDiv += tDiv;
                             
                             if (m >= currentMonth) {
-                                if(!h.cashBuffer) h.cashBuffer = 0;
-                                h.cashBuffer += div; 
+                                h.cashBuffer += tDiv; 
                             }
                         }
                     });
+                });
 
-                    if (m >= currentMonth) {
+                // 3. 배당 재투자(DRIP) 매수
+                if (m >= currentMonth) {
+                    simAccounts.forEach(acc => {
                         acc.holdings.forEach(h => {
                             if (h.cashBuffer > 0 && h.targetTicker) {
                                 const targetData = marketData[h.targetTicker];
@@ -1072,11 +1139,20 @@
                                     if (sharesToBuy > 0) {
                                         let targetHolding = acc.holdings.find(th => th.ticker === h.targetTicker);
                                         if (targetHolding) {
+                                            targetHolding.dripQty += sharesToBuy;
                                             targetHolding.quantity += sharesToBuy;
                                         } else {
                                             acc.holdings.push({
                                                 id: 'sim_' + Math.random().toString(36).substr(2, 9),
-                                                ticker: h.targetTicker, avgPrice: targetData.price, quantity: sharesToBuy, targetTicker: h.targetTicker 
+                                                ticker: h.targetTicker, 
+                                                avgPrice: targetData.price, 
+                                                quantity: sharesToBuy, 
+                                                baseQty: 0,
+                                                dripQty: sharesToBuy,
+                                                dcaQty: 0,
+                                                targetTicker: h.targetTicker,
+                                                cashBuffer: 0,
+                                                dcaRemainder: 0
                                             });
                                         }
                                         h.cashBuffer -= (sharesToBuy * targetData.price);
@@ -1084,10 +1160,16 @@
                                 }
                             }
                         });
-                    }
-                });
+                    });
+                }
                 
-                history.push(monthlyDivTotal);
+                // 이번 달의 분리된 데이터 히스토리 저장
+                history.push({
+                    base: mBaseDiv,
+                    drip: mDripDiv,
+                    dca: mDcaDiv,
+                    total: mTotalDiv
+                });
 
                 if (m <= currentMonth) {
                     lineChartData.push({
@@ -1101,44 +1183,48 @@
                         acc.holdings.forEach(h => {
                             const mData = marketData[h.ticker];
                             if(mData) {
-                                mSimAsset += (h.quantity * mData.price) + (h.cashBuffer || 0);
+                                mSimAsset += (h.quantity * mData.price) + (h.cashBuffer || 0) + (h.dcaRemainder || 0);
                             }
                         });
                     });
                     lineChartData.push({
                         month: m,
-                        principal: basePrincipal,
+                        principal: currentSimPrincipal,
                         tr: mSimAsset 
                     });
                 }
             }
 
-            const currentDiv = history[currentMonth - 1] || 0;
-            const decDiv = history[11] || 0;
+            const currentDiv = history[currentMonth - 1] ? history[currentMonth - 1].total : 0;
+            const decDiv = history[11] ? history[11].total : 0;
 
             const barContainer = document.getElementById('dash-sim-chart');
             const lineContainer = document.getElementById('dash-line-chart');
             
-            if (history.every(v => v === 0)) {
+            if (history.every(v => v.total === 0)) {
                 barContainer.innerHTML = '<div class="w-full h-full flex items-center justify-center text-slate-500 text-sm font-medium">데이터가 없습니다.</div>';
                 lineContainer.innerHTML = '<div class="w-full h-full flex items-center justify-center text-slate-500 text-sm font-medium">데이터가 없습니다.</div>';
                 document.getElementById('dash-sim-summary').innerHTML = '<li class="text-xs">데이터 없음</li>';
+                document.getElementById('dash-bar-summary').innerHTML = '';
                 return;
             }
 
-            const nonZeroHistory = history.filter(v => v > 0);
-            const minDiv = nonZeroHistory.length > 0 ? Math.min(...nonZeroHistory) : 0; 
-            const maxDiv = Math.max(...history);
+            // v1.44: 스택 막대(Stacked Bar) 렌더링 로직
+            const nonZeroHistory = history.filter(v => v.total > 0);
+            const minDiv = nonZeroHistory.length > 0 ? Math.min(...nonZeroHistory.map(v => v.total)) : 0; 
+            const maxDiv = Math.max(...history.map(v => v.total));
             const divDiff = maxDiv - minDiv;
             
             let chartHTML = '';
             let previousVal = 0;
             let previousHeight = 10;
 
-            history.forEach((div, index) => {
+            history.forEach((divData, index) => {
                 const m = index + 1;
+                const div = divData.total;
                 let h = 0;
                 
+                // 전체 막대 높이 계산 (기존 유지)
                 if (div <= 0) {
                     h = 2;
                 } else if (divDiff <= 0) {
@@ -1167,20 +1253,26 @@
                 const isCurrent = m === currentMonth;
                 const isDec = m === 12;
                 
-                let bgClass = 'bg-slate-700/60 rounded-t-[3px] border-t border-slate-600/50'; 
+                // 구역별 높이 비율 계산 (퍼센트)
+                const basePct = div > 0 ? (divData.base / div) * 100 : 0;
+                const dripPct = div > 0 ? (divData.drip / div) * 100 : 0;
+                const dcaPct = div > 0 ? (divData.dca / div) * 100 : 0;
+
+                // 베이스 구역(과거/현재/미래) 색상 테마 결정
+                let bgClassBase = 'bg-slate-700/60'; 
                 let labelColor = 'text-slate-500';
                 let valColor = 'text-slate-400';
 
                 if (isCurrent) {
-                    bgClass = 'bg-yellow-500 shadow-[0_0_12px_rgba(234,179,8,0.4)] rounded-t-[3px]';
+                    bgClassBase = 'bg-yellow-500';
                     labelColor = 'text-yellow-500 font-bold';
                     valColor = 'text-yellow-400 font-bold';
                 } else if (isDec) {
-                    bgClass = 'bg-gradient-to-t from-blue-500 to-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.4)] rounded-t-[3px]';
+                    bgClassBase = 'bg-gradient-to-t from-blue-600 to-blue-500';
                     labelColor = 'text-emerald-400 font-bold';
                     valColor = 'text-emerald-300 font-bold';
                 } else if (m > currentMonth) {
-                    bgClass = 'bg-gradient-to-t from-blue-800 to-blue-500 rounded-t-[3px]';
+                    bgClassBase = 'bg-gradient-to-t from-blue-800 to-blue-500';
                     labelColor = 'text-slate-400';
                     valColor = 'text-slate-300';
                 }
@@ -1192,17 +1284,49 @@
                     shortVal = formatMoney(div);
                 }
 
+                // 스택 막대 내부 HTML 조립 (위에서 아래로 DCA -> DRIP -> Base 순서로 쌓임)
+                let innerHtml = '';
+                if (dcaPct > 0) {
+                    innerHtml += `<div class="w-full bg-gradient-to-t from-purple-500 to-purple-400 border-b border-slate-800/30" style="height: ${dcaPct}%;"></div>`;
+                }
+                if (dripPct > 0) {
+                    innerHtml += `<div class="w-full bg-gradient-to-t from-teal-500 to-teal-400 border-b border-slate-800/30" style="height: ${dripPct}%;"></div>`;
+                }
+                if (basePct > 0) {
+                    innerHtml += `<div class="w-full ${bgClassBase}" style="height: ${basePct}%;"></div>`;
+                }
+
+                // 스마트 툴팁 (상세 내역 표시)
+                let tooltipHtml = `
+                    <div class="absolute -top-14 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 bg-cardBg p-2 rounded-lg text-white z-30 shadow-[0_4px_20px_rgba(0,0,0,0.5)] border border-slate-600 pointer-events-none flex flex-col gap-1 text-[9px] whitespace-nowrap transition-opacity">
+                        <div class="font-extrabold border-b border-slate-600 pb-1 mb-0.5 text-[10px]">총액: ${formatMoney(div)}원</div>
+                        ${divData.dca > 0 ? `<div class="text-purple-300 flex justify-between gap-4 font-medium"><span>DCA 추가:</span> <span>+${formatMoney(divData.dca)}</span></div>` : ''}
+                        ${divData.drip > 0 ? `<div class="text-teal-300 flex justify-between gap-4 font-medium"><span>DRIP 추가:</span> <span>+${formatMoney(divData.drip)}</span></div>` : ''}
+                        <div class="text-blue-300 flex justify-between gap-4"><span>기본 수량:</span> <span>${formatMoney(divData.base)}</span></div>
+                    </div>
+                `;
+
                 chartHTML += `
                     <div class="flex flex-col items-center justify-end flex-1 h-full relative group min-w-0 px-[1px]">
                         <span class="text-[7px] sm:text-[8px] mb-1.5 ${valColor} whitespace-nowrap z-10 text-center w-full block overflow-visible">${shortVal}</span>
-                        <div class="w-full ${bgClass} relative hover:opacity-80 transition-opacity cursor-pointer" style="height: ${h}%"></div>
+                        
+                        <div class="w-full flex flex-col justify-start rounded-t-[3px] overflow-hidden relative hover:opacity-80 transition-opacity cursor-pointer shadow-sm ${isCurrent ? 'shadow-[0_0_12px_rgba(234,179,8,0.4)]' : ''}" style="height: ${h}%">
+                            ${innerHtml}
+                        </div>
+                        
+                        ${tooltipHtml}
+                        
                         <span class="text-[7px] sm:text-[8px] mt-1 sm:mt-2 ${labelColor} text-center w-full block">${m}월</span>
                     </div>
                 `;
             });
             barContainer.innerHTML = chartHTML;
 
-            // v1.35 캡처 왜곡 방지를 위한 안전한 HTML 오버레이 구조
+            const growthRate = currentDiv > 0 ? ((decDiv - currentDiv) / currentDiv) * 100 : 0;
+            document.getElementById('dash-bar-summary').innerHTML = `
+                <li class="flex items-center gap-2.5"><div class="w-1.5 h-1.5 rounded-full bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.6)]"></div> <div>추가 투자 시너지: 배당수익 <strong class="text-yellow-400">${growthRate.toFixed(1)}%</strong> 상승 (DCA+DRIP)</div></li>
+            `;
+
             const w = 1000;
             const h_svg = 380; 
             const padT = 80;  
@@ -1280,35 +1404,39 @@
                 
                 <div class="flex justify-center gap-x-5 sm:gap-x-8 text-[10px] sm:text-[11px] mt-4 mb-1 w-full">
                     <div class="flex items-center gap-1.5 text-slate-400">
-                        <div class="w-4 h-0.5 border-t-2 border-dashed border-slate-500"></div> 원금
+                        <div class="w-4 h-0.5 border-t-2 border-dashed border-slate-500"></div> 투자 원금
                     </div>
                     <div class="flex items-center gap-1.5 text-emerald-400">
                         <div class="flex items-center">
                             <div class="w-2.5 h-1.5 bg-emerald-500 rounded-sm"></div>
                             <div class="w-2.5 h-0 border-t-2 border-dashed border-emerald-400 ml-0.5"></div>
                         </div>
-                        자산 현황 / 예측
+                        자산 예측 (TR)
                     </div>
                 </div>
             `;
             lineContainer.innerHTML = svgLineHTML;
 
             let finalAsset = lineChartData.length > 11 ? lineChartData[11].tr : 0;
-            const annualWithDrip = history.reduce((a, b) => a + b, 0);
+            let finalPrincipal = lineChartData.length > 11 ? lineChartData[11].principal : basePrincipal; 
+            
+            const annualWithDrip = history.reduce((a, b) => a + b.total, 0); // v1.44 total로 접근 
             
             let divSummaryHtml = '';
             if (annualWithDrip > annualWithoutDrip) {
-                divSummaryHtml = `올해 총 배당금 예상: <span class="text-slate-400 mr-1">${formatMoney(annualWithoutDrip)}원</span> <i class="fas fa-arrow-right text-[9px] mx-1 text-slate-500"></i> <strong class="text-white">${formatMoney(annualWithDrip)}원</strong> <span class="text-[9px] text-emerald-400 font-bold ml-1">DRIP</span>`;
+                divSummaryHtml = `올해 총 배당금 예상: <span class="text-slate-400 mr-1">${formatMoney(annualWithoutDrip)}원</span> <i class="fas fa-arrow-right text-[9px] mx-1 text-slate-500"></i> <strong class="text-white">${formatMoney(annualWithDrip)}원</strong> <span class="text-[9px] text-emerald-400 font-bold ml-1">DCA+DRIP</span>`;
             } else {
                 divSummaryHtml = `올해 총 배당금 예상: <strong class="text-white">${formatMoney(annualWithoutDrip)}원</strong>`;
             }
 
-            const growthRate = currentDiv > 0 ? ((decDiv - currentDiv) / currentDiv) * 100 : 0;
+            const predictedTRRate = finalPrincipal > 0 ? ((finalAsset - finalPrincipal) / finalPrincipal) * 100 : 0;
+            const trRateSign = predictedTRRate > 0 ? '+' : '';
+            const trRateColor = predictedTRRate > 0 ? 'text-up' : (predictedTRRate < 0 ? 'text-down' : 'text-slate-400');
             
             document.getElementById('dash-sim-summary').innerHTML = `
                 <li class="flex items-center gap-2.5"><div class="w-1.5 h-1.5 rounded-full bg-brand"></div> <div class="flex-1">${divSummaryHtml}</div></li>
-                <li class="flex items-center gap-2.5"><div class="w-1.5 h-1.5 rounded-full bg-emerald-400"></div> <div class="flex-1">총 자산(TR) 예측: <strong class="text-white">${formatMoney(baseAsset)}원</strong> <i class="fas fa-arrow-right text-[9px] mx-1 text-slate-500"></i> <strong class="text-emerald-400">${formatMoney(finalAsset)}원</strong></div></li>
-                <li class="flex items-center gap-2.5"><div class="w-1.5 h-1.5 rounded-full bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.6)]"></div> <div class="flex-1">배당 재투자 효과: 배당수익 <strong class="text-yellow-400">${growthRate.toFixed(1)}%</strong> 추가 상승</div></li>
+                <li class="flex items-center gap-2.5"><div class="w-1.5 h-1.5 rounded-full bg-emerald-400"></div> <div class="flex-1">연말 최종 자산(TR) 예측: <strong class="text-white">${formatMoney(baseAsset)}원</strong> <i class="fas fa-arrow-right text-[9px] mx-1 text-slate-500"></i> <strong class="text-emerald-400">${formatMoney(finalAsset)}원</strong></div></li>
+                <li class="flex items-center gap-2.5"><div class="w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.6)]"></div> <div class="flex-1">예상 총 투자 원금: <span class="text-slate-300 font-medium mr-2">${formatMoney(finalPrincipal)}원</span> <i class="fas fa-caret-right text-slate-500 text-[10px] mx-1"></i> TR: <strong class="${trRateColor}">${trRateSign}${predictedTRRate.toFixed(2)}%</strong></div></li>
             `;
         }
 
@@ -1389,26 +1517,102 @@
                             
                             const isActual = (actualCurrentDiv !== null && actualCurrentDiv !== undefined);
                             const divLabel = isActual ? '실제' : '예상';
-                            const divTextClass = guideDiv === 0 ? 'text-red-400 font-bold' : (isActual ? 'text-emerald-400 font-bold' : '');
+                            const divTextClass = guideDiv === 0 ? 'text-red-400 font-bold' : (isActual ? 'text-emerald-400 font-bold' : 'text-blue-300 font-bold');
 
-                            windmillGuide = `
-                                <div class="mt-4 mb-2 ml-[44px] sm:ml-[52px] bg-gradient-to-r from-blue-900/30 to-slate-800/30 rounded-2xl p-3 sm:p-4 border border-blue-500/20 shadow-inner relative overflow-hidden">
-                                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-brand rounded-l-2xl"></div>
-                                    <div class="flex items-center justify-between gap-2">
-                                        <div class="flex-1 min-w-0">
-                                            <p class="text-[10px] text-slate-400 mb-1 flex items-center gap-1.5 uppercase tracking-wide">
-                                                <i class="fas fa-sync-alt text-brand"></i> 재투자 타겟
-                                            </p>
-                                            <p class="text-[12px] sm:text-sm font-bold text-white mb-0.5 truncate">${tName}</p>
-                                            <p class="text-[10px] sm:text-[11px] text-slate-400">${divLabel} <span class="${divTextClass}">${formatMoney(guideDiv)}원</span> <span class="mx-1">→</span> <span class="text-brand font-bold">${canBuyQty}주</span> 매수</p>
+                            let highlightClass = 'bg-gradient-to-r from-blue-900/30 to-slate-800/30 border-blue-500/20';
+                            let badgeHtml = '';
+                            let exDateInfo = '';
+                            let actionButtonHtml = '';
+
+                            if (mData.date) {
+                                const exD = new Date(mData.date);
+                                const exMonth = exD.getMonth() + 1;
+                                const exDay = exD.getDate();
+                                exDateInfo = `<span class="text-[8px] text-slate-400 bg-slate-800 border border-slate-600 px-1.5 py-[2px] rounded-md ml-2 font-medium tracking-wide">배당락 ${exMonth}/${exDay}</span>`;
+
+                                const today = new Date();
+                                const currentM = today.getMonth() + 1;
+                                const isDripDone = h.dripStatus && h.dripStatus[currentM];
+
+                                if (exD.getMonth() === today.getMonth() && exD.getFullYear() === today.getFullYear() && guideDiv > 0 && !isDripDone) {
+                                    let leftBarColor = 'bg-brand';
+                                    
+                                    if (!isActual) {
+                                        highlightClass = 'bg-gradient-to-r from-blue-900/60 to-brand/20 border-brand shadow-[0_0_15px_rgba(59,130,246,0.35)] ring-1 ring-brand/50 transition-all duration-500';
+                                        leftBarColor = 'bg-blue-400';
+                                        badgeHtml = `
+                                            <div class="absolute top-0 right-0 bg-gradient-to-r from-brand to-blue-500 text-white text-[8px] font-extrabold px-2.5 py-1 rounded-bl-xl rounded-tr-2xl shadow-md tracking-wider flex items-center gap-1.5 z-20">
+                                                <span class="relative flex h-1.5 w-1.5">
+                                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                                                    <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
+                                                </span>
+                                                배당금 확인 대기중
+                                            </div>
+                                        `;
+                                    } else {
+                                        highlightClass = 'bg-gradient-to-r from-emerald-900/60 to-teal-500/20 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.35)] ring-1 ring-emerald-500/50 transition-all duration-500';
+                                        leftBarColor = 'bg-emerald-400';
+                                        badgeHtml = `
+                                            <div class="absolute top-0 right-0 bg-gradient-to-r from-emerald-500 to-teal-400 text-white text-[8px] font-extrabold px-2.5 py-1 rounded-bl-xl rounded-tr-2xl shadow-md tracking-wider flex items-center gap-1.5 z-20">
+                                                <span class="relative flex h-1.5 w-1.5">
+                                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                                                    <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
+                                                </span>
+                                                배당 확인됨! 타겟 매수 요망
+                                            </div>
+                                        `;
+                                        actionButtonHtml = `
+                                            <div class="mt-3 pt-3 border-t border-emerald-500/30">
+                                                <button onclick="event.stopPropagation(); toggleDripDone('${acc.id}', '${h.id}', ${currentM})" class="w-full py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white text-[11px] font-bold rounded-xl shadow-md flex items-center justify-center gap-1.5 transition-all">
+                                                    <i class="fas fa-check-circle text-sm"></i> 재투자(DRIP) 매수 완료
+                                                </button>
+                                            </div>
+                                        `;
+                                    }
+                                    
+                                    windmillGuide = `
+                                        <div class="mt-4 mb-2 ml-[44px] sm:ml-[52px] ${highlightClass} rounded-2xl p-3 sm:p-4 border shadow-inner relative overflow-hidden">
+                                            <div class="absolute left-0 top-0 bottom-0 w-1 ${leftBarColor} rounded-l-2xl"></div>
+                                            ${badgeHtml}
+                                            <div class="flex flex-col relative z-10">
+                                                <div class="flex items-center justify-between gap-2">
+                                                    <div class="flex-1 min-w-0">
+                                                        <p class="text-[10px] text-slate-400 mb-1 flex items-center uppercase tracking-wide">
+                                                            <i class="fas fa-sync-alt text-brand mr-1.5"></i> 재투자 타겟 ${exDateInfo}
+                                                        </p>
+                                                        <p class="text-[12px] sm:text-sm font-bold text-white mb-0.5 truncate pr-14">${tName}</p>
+                                                        <p class="text-[10px] sm:text-[11px] text-slate-400 mt-1">${divLabel} <span class="${divTextClass}">${formatMoney(guideDiv)}원</span> <span class="mx-1">→</span> <span class="text-brand font-bold">${canBuyQty}주</span> 매수</p>
+                                                    </div>
+                                                    <div class="bg-blue-500/20 px-2 sm:px-3 py-2 rounded-xl text-center border border-blue-500/30 flex-shrink-0 min-w-[50px] shadow-sm">
+                                                        <p class="text-[9px] sm:text-[10px] text-blue-300 mb-0.5">잔돈</p>
+                                                        <p class="text-[11px] sm:text-xs font-bold text-white">${formatMoney(leftover)}원</p>
+                                                    </div>
+                                                </div>
+                                                ${actionButtonHtml}
+                                            </div>
                                         </div>
-                                        <div class="bg-blue-500/10 px-2 sm:px-3 py-2 rounded-xl text-center border border-blue-500/20 flex-shrink-0 min-w-[50px]">
-                                            <p class="text-[9px] sm:text-[10px] text-blue-300 mb-0.5">잔돈</p>
-                                            <p class="text-[11px] sm:text-xs font-bold text-white">${formatMoney(leftover)}원</p>
+                                    `;
+                                } else {
+                                    windmillGuide = `
+                                        <div class="mt-4 mb-2 ml-[44px] sm:ml-[52px] ${highlightClass} rounded-2xl p-3 sm:p-4 border shadow-inner relative overflow-hidden">
+                                            <div class="absolute left-0 top-0 bottom-0 w-1 bg-brand rounded-l-2xl"></div>
+                                            <div class="flex items-center justify-between gap-2 relative z-10">
+                                                <div class="flex-1 min-w-0">
+                                                    <p class="text-[10px] text-slate-400 mb-1 flex items-center uppercase tracking-wide">
+                                                        <i class="fas fa-sync-alt text-brand mr-1.5"></i> 재투자 타겟 ${exDateInfo}
+                                                    </p>
+                                                    <p class="text-[12px] sm:text-sm font-bold text-white mb-0.5 truncate pr-14">${tName}</p>
+                                                    <p class="text-[10px] sm:text-[11px] text-slate-400 mt-1">${divLabel} <span class="${divTextClass}">${formatMoney(guideDiv)}원</span> <span class="mx-1">→</span> <span class="text-brand font-bold">${canBuyQty}주</span> 매수</p>
+                                                </div>
+                                                <div class="bg-blue-500/20 px-2 sm:px-3 py-2 rounded-xl text-center border border-blue-500/30 flex-shrink-0 min-w-[50px] shadow-sm">
+                                                    <p class="text-[9px] sm:text-[10px] text-blue-300 mb-0.5">잔돈</p>
+                                                    <p class="text-[11px] sm:text-xs font-bold text-white">${formatMoney(leftover)}원</p>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
-                            `;
+                                    `;
+                                }
+                            }
                         } else if (h.targetTicker) {
                             windmillGuide = `
                                 <div class="mt-4 mb-2 ml-[44px] sm:ml-[52px] bg-slate-800/50 rounded-2xl p-4 border border-slate-700/50">
@@ -1420,25 +1624,32 @@
                         const initial = getTickerName(h.ticker).substring(0, 1);
 
                         const scheduleBadge = DIV_SCHEDULE[h.ticker] === "early"
-                            ? '<span class="text-[9px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1.5 py-[2px] rounded font-bold tracking-wider leading-none whitespace-nowrap ml-1.5">월초</span>'
-                            : '<span class="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-[2px] rounded font-bold tracking-wider leading-none whitespace-nowrap ml-1.5">월중</span>';
+                            ? '<span class="text-[8px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1.5 py-[3px] rounded font-bold tracking-widest leading-none whitespace-nowrap shadow-sm">월초</span>'
+                            : '<span class="text-[8px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-[3px] rounded font-bold tracking-widest leading-none whitespace-nowrap shadow-sm">월중</span>';
+                        
+                        const dcaBadge = (h.dcaAmount && h.dcaAmount > 0)
+                            ? `<span class="text-[8px] bg-purple-500/20 text-purple-400 border border-purple-500/30 px-1.5 py-[3px] rounded font-bold tracking-widest leading-none whitespace-nowrap shadow-sm ml-1.5">DCA ${formatMoney(h.dcaAmount / 10000)}만/월</span>`
+                            : '';
 
                         return `
                             <div class="cursor-pointer group py-2" onclick="openEditHoldingModal('${acc.id}', '${h.id}')">
-                                <div class="flex items-start justify-between gap-2">
-                                    <div class="flex items-center gap-3 flex-1 min-w-0 mt-0.5">
-                                        <div class="w-10 h-10 rounded-xl flex-shrink-0 bg-slate-800 flex items-center justify-center text-slate-300 font-bold border border-slate-700 group-hover:border-brand/50 transition-colors">
-                                            ${initial}
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="flex items-start gap-3 flex-1 min-w-0 pr-1">
+                                        <div class="flex flex-col items-center gap-1.5 flex-shrink-0 w-10 mt-0.5">
+                                            <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-slate-300 font-bold border border-slate-700 group-hover:border-brand/50 transition-colors shadow-sm">
+                                                ${initial}
+                                            </div>
+                                            ${scheduleBadge}
                                         </div>
-                                        <div class="flex-1 min-w-0 flex flex-col justify-center pr-2" style="max-width: 60%;">
-                                            <div class="flex items-center mb-0.5 w-full">
-                                                <p class="font-bold text-white text-[13px] sm:text-sm truncate inline-block" style="max-width: 75%;">${getTickerName(h.ticker)}</p>
-                                                <div class="inline-block flex-shrink-0">${scheduleBadge}</div>
+                                        <div class="flex-1 min-w-0 flex flex-col justify-center mt-0.5">
+                                            <div class="flex items-center mb-1 w-full">
+                                                <p class="font-bold text-white text-xs sm:text-[13px] tracking-tight truncate inline-block group-hover:text-brand transition-colors" style="max-width: ${h.dcaAmount > 0 ? '50%' : '75%'};">${getTickerName(h.ticker)}</p>
+                                                <div class="inline-block flex-shrink-0">${dcaBadge}</div>
                                             </div>
                                             <p class="text-[10px] sm:text-[11px] text-slate-400">${formatMoney(h.quantity)}주 <span class="mx-0.5">·</span> 평단 ${formatMoney(h.avgPrice)}</p>
                                         </div>
                                     </div>
-                                    <div class="text-right flex-shrink-0 pl-2">
+                                    <div class="text-right flex-shrink-0 pl-1 mt-0.5">
                                         <p class="font-bold text-white text-[13px] sm:text-sm mb-1">${formatMoney(asset)}원</p>
                                         <div class="flex flex-col items-end gap-0.5">
                                             <p class="text-[10px] sm:text-[11px] font-bold ${pnlColor} flex items-center justify-end gap-1">
@@ -1514,9 +1725,6 @@
             }).join('');
         }
 
-        /* ==========================================
-           5. 모달 및 폼 제어
-           ========================================== */
         function populateSelectBoxes() {
             const selectTicker = document.getElementById('select-ticker');
             const selectTarget = document.getElementById('select-target-ticker');
@@ -1631,6 +1839,7 @@
             document.getElementById('input-avg-price').value = '';
             document.getElementById('input-quantity').value = '';
             document.getElementById('input-base-div').value = ''; 
+            document.getElementById('input-dca-amount').value = ''; 
             document.getElementById('btn-delete-holding').classList.add('hidden');
             
             if(availableTickers.length > 0) {
@@ -1656,6 +1865,7 @@
             document.getElementById('select-ticker').value = h.ticker;
             document.getElementById('input-avg-price').value = h.avgPrice;
             document.getElementById('input-quantity').value = h.quantity;
+            document.getElementById('input-dca-amount').value = h.dcaAmount || ''; 
             
             const baseVal = h.baseAccumulatedDiv !== undefined ? h.baseAccumulatedDiv : (h.accumulatedDiv || '');
             document.getElementById('input-base-div').value = baseVal; 
@@ -1674,6 +1884,7 @@
             const qty = parseFloat(document.getElementById('input-quantity').value);
             const baseAccumulatedDiv = parseFloat(document.getElementById('input-base-div').value) || 0; 
             const targetTicker = document.getElementById('select-target-ticker').value;
+            const dcaAmount = parseFloat(document.getElementById('input-dca-amount').value) || 0; 
 
             if (!ticker || isNaN(avgPrice) || isNaN(qty) || avgPrice <= 0 || qty <= 0) {
                 return showToast("평단가와 수량을 정확히 입력하세요.");
@@ -1713,6 +1924,7 @@
                     h.baseAccumulatedDiv = baseAccumulatedDiv;
                     h.monthlyDividends = newMonthlyDividends;
                     h.targetTicker = targetTicker;
+                    h.dcaAmount = dcaAmount; 
                 }
                 showToast("종목이 수정되었습니다.");
             } else {
@@ -1722,6 +1934,7 @@
                     existingHolding.quantity += qty;
                     existingHolding.avgPrice = totalCost / existingHolding.quantity;
                     existingHolding.baseAccumulatedDiv = (existingHolding.baseAccumulatedDiv || 0) + baseAccumulatedDiv;
+                    existingHolding.dcaAmount = dcaAmount; 
                     
                     if (!existingHolding.monthlyDividends) existingHolding.monthlyDividends = {};
                     for(let m in newMonthlyDividends) {
@@ -1741,7 +1954,8 @@
                         quantity: qty,
                         baseAccumulatedDiv: baseAccumulatedDiv,
                         monthlyDividends: newMonthlyDividends,
-                        targetTicker: targetTicker
+                        targetTicker: targetTicker,
+                        dcaAmount: dcaAmount 
                     });
                     showToast("새 종목이 추가되었습니다.");
                 }
@@ -1776,9 +1990,6 @@
             document.getElementById('modal-manual-update').classList.remove('hidden');
         }
 
-        /* ==========================================
-           6. 네비게이션 제어
-           ========================================== */
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.getElementById('tab-' + tabId).classList.add('active');
@@ -1810,5 +2021,3 @@
     </script>
 </body>
 </html>
-
-
