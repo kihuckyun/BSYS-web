@@ -109,7 +109,7 @@
         </div>
         <div class="flex items-center gap-1.5 sm:gap-2">
             <div class="text-[10px] font-bold text-brand bg-brand/10 px-2 py-1 rounded-lg border border-brand/20 shadow-sm tracking-wide hidden sm:block mr-1">
-                by 에이미 v1.49
+                by 에이미 v1.50
             </div>
             <button onclick="captureDashboard()" class="w-8 h-8 rounded-full bg-cardBg flex items-center justify-center text-slate-400 hover:text-emerald-400 hover:bg-cardBgLight transition-colors shadow-sm" title="월간 보고서 이미지 저장">
                 <i class="fas fa-camera text-xs"></i>
@@ -622,7 +622,7 @@
 
                 document.body.removeChild(clone);
                 captureHeader.classList.add('hidden');
-                document.getElementById('bottom-nav').style.display = 'flex';
+                document.getElementById('bottom-nav').style.display = '';
                 document.body.classList.remove('capture-mode');
 
                 const link = document.createElement('a');
@@ -635,7 +635,7 @@
                 console.error(err);
                 document.body.classList.remove('capture-mode');
                 document.getElementById('capture-header').classList.add('hidden');
-                document.getElementById('bottom-nav').style.display = 'flex';
+                document.getElementById('bottom-nav').style.display = '';
                 showToast("이미지 캡처에 실패했습니다.");
             } finally {
                 loaderText.textContent = "데이터 동기화 중..."; 
