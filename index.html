@@ -77,7 +77,8 @@
         .capture-mode .bg-teal-500\/20 { background-color: #064e3b !important; border-color: #10b981 !important; }
         .capture-mode .bg-red-900\/40 { background-color: #7f1d1d !important; border-color: #ef4444 !important; }
         .capture-mode .border-slate-800\/60,
-        .capture-mode .border-slate-700\/50 { border-color: #334155 !important; }
+        .capture-mode .border-slate-700\/50,
+        .capture-mode .border-slate-600\/50 { border-color: #334155 !important; }
         .capture-mode .shadow-sm, 
         .capture-mode .shadow-lg, 
         .capture-mode .shadow-inner { box-shadow: none !important; }
@@ -108,7 +109,7 @@
         </div>
         <div class="flex items-center gap-1.5 sm:gap-2">
             <div class="text-[10px] font-bold text-brand bg-brand/10 px-2 py-1 rounded-lg border border-brand/20 shadow-sm tracking-wide hidden sm:block mr-1">
-                by 에이미 v1.44
+                by 에이미 v1.46
             </div>
             <button onclick="captureDashboard()" class="w-8 h-8 rounded-full bg-cardBg flex items-center justify-center text-slate-400 hover:text-emerald-400 hover:bg-cardBgLight transition-colors shadow-sm" title="월간 보고서 이미지 저장">
                 <i class="fas fa-camera text-xs"></i>
@@ -217,7 +218,7 @@
                 </div>
             </div>
 
-            <!-- 3. 자산 구성 및 월별 차트 통합 -->
+            <!-- 3. 자산 구성 및 월별 차트 -->
             <div class="bg-cardBg rounded-[28px] p-5 sm:p-7 border border-slate-800/60 shadow-lg">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-sm font-bold text-white">자산 구성</h3>
@@ -225,7 +226,6 @@
                 <div class="flex items-center justify-between mb-8" id="dash-combined-donut"></div>
                 
                 <div class="pt-6 border-t border-slate-700/50">
-                    <!-- v1.44: 막대그래프 상단 범례 추가 -->
                     <div class="flex justify-between items-end mb-4">
                         <div>
                             <h3 class="text-sm font-bold text-white flex items-center gap-2 mb-2.5">
@@ -1016,19 +1016,15 @@
                     
                     return `
                         <div class="flex items-center justify-between p-3 rounded-2xl hover:bg-slate-800 transition-colors cursor-default gap-3">
-                            <div class="flex items-center gap-3 flex-1 min-w-0 pr-1">
-                                <div class="flex flex-col items-center gap-1.5 flex-shrink-0 w-10">
-                                    <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-white font-bold border border-slate-700/50 shadow-sm" style="border-color: ${color}40; background-color: ${color}20; color: ${color}">
-                                        ${initial}
-                                    </div>
-                                    ${scheduleBadge}
+                            <div class="flex flex-col items-center gap-1.5 flex-shrink-0 w-10">
+                                <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold border shadow-sm" style="border-color: ${color}40; background-color: ${color}20; color: ${color}">
+                                    ${initial}
                                 </div>
-                                <div class="flex-1 min-w-0 flex flex-col justify-center">
-                                    <div class="flex items-center mb-0.5 w-full">
-                                        <p class="font-bold text-white text-xs sm:text-[13px] tracking-tight truncate w-full">${getTickerName(ticker)}</p>
-                                    </div>
-                                    <p class="text-[10px] text-slate-500">${ticker}</p>
-                                </div>
+                                ${scheduleBadge}
+                            </div>
+                            <div class="flex-1 min-w-0 flex flex-col justify-center pr-1">
+                                <p class="font-bold text-white text-xs sm:text-[13px] tracking-tight whitespace-normal break-keep pr-2 leading-snug">${getTickerName(ticker)}</p>
+                                <p class="text-[10px] text-slate-500 mt-0.5">${ticker}</p>
                             </div>
                             <div class="text-right flex-shrink-0 pl-1">
                                 <p class="font-bold text-white text-sm mb-0.5">${formatMoney(amount)}원</p>
@@ -1042,7 +1038,6 @@
             renderDashboardSimulation(mBasePrincipal, mBaseAsset, annualTotalPostTax);
         }
 
-        // v1.44: 막대그래프 구역 분할 (Stacked Bar Chart)를 위한 시뮬레이션 엔진 업그레이드
         function renderDashboardSimulation(basePrincipal, baseAsset, annualWithoutDrip) {
             let simAccounts = JSON.parse(JSON.stringify(userData.accounts));
             const currentMonth = new Date().getMonth() + 1; 
@@ -1052,12 +1047,11 @@
             
             let currentSimPrincipal = basePrincipal;
 
-            // 시뮬레이션을 위한 초기 수량 분리 세팅
             simAccounts.forEach(acc => {
                 acc.holdings.forEach(h => {
-                    h.baseQty = h.quantity; // 순수 원래 가지고 있던 수량
-                    h.dripQty = 0;          // DRIP으로 늘어난 수량
-                    h.dcaQty = 0;           // DCA로 늘어난 수량
+                    h.baseQty = h.quantity; 
+                    h.dripQty = 0;          
+                    h.dcaQty = 0;           
                     h.cashBuffer = 0;
                     h.dcaRemainder = 0;
                 });
@@ -1069,7 +1063,6 @@
                 let mDcaDiv = 0;
                 let mTotalDiv = 0;
                 
-                // 1. DCA 매수 적용 (미래 월)
                 if (m > currentMonth) {
                     simAccounts.forEach(acc => {
                         acc.holdings.forEach(h => {
@@ -1082,7 +1075,7 @@
                                     const sharesToBuy = Math.floor(h.dcaRemainder / mData.price);
                                     if (sharesToBuy > 0) {
                                         h.dcaQty += sharesToBuy;
-                                        h.quantity += sharesToBuy; // 전체 수량 동기화
+                                        h.quantity += sharesToBuy; 
                                         h.dcaRemainder -= (sharesToBuy * mData.price);
                                     }
                                 }
@@ -1091,7 +1084,6 @@
                     });
                 }
                 
-                // 2. 배당금 계산 (구역별 분리)
                 simAccounts.forEach(acc => {
                     const accTaxRate = acc.taxRate !== undefined ? acc.taxRate : 0.154;
                     acc.holdings.forEach(h => {
@@ -1105,11 +1097,9 @@
                             let bDiv = 0, drDiv = 0, dcDiv = 0, tDiv = 0;
 
                             if (actualRecord !== null && actualRecord !== undefined && m <= currentMonth) {
-                                // 수동 기입된 과거 기록은 기본 배당(Base)으로 일괄 취급
                                 tDiv = actualRecord;
                                 bDiv = actualRecord;
                             } else {
-                                // 미래 예상 배당금은 출처에 따라 정확히 3등분 계산
                                 bDiv = (h.baseQty || h.quantity) * mData.div * (1 - actualTaxRate);
                                 drDiv = (h.dripQty || 0) * mData.div * (1 - actualTaxRate);
                                 dcDiv = (h.dcaQty || 0) * mData.div * (1 - actualTaxRate);
@@ -1128,7 +1118,6 @@
                     });
                 });
 
-                // 3. 배당 재투자(DRIP) 매수
                 if (m >= currentMonth) {
                     simAccounts.forEach(acc => {
                         acc.holdings.forEach(h => {
@@ -1163,7 +1152,6 @@
                     });
                 }
                 
-                // 이번 달의 분리된 데이터 히스토리 저장
                 history.push({
                     base: mBaseDiv,
                     drip: mDripDiv,
@@ -1209,7 +1197,6 @@
                 return;
             }
 
-            // v1.44: 스택 막대(Stacked Bar) 렌더링 로직
             const nonZeroHistory = history.filter(v => v.total > 0);
             const minDiv = nonZeroHistory.length > 0 ? Math.min(...nonZeroHistory.map(v => v.total)) : 0; 
             const maxDiv = Math.max(...history.map(v => v.total));
@@ -1224,7 +1211,6 @@
                 const div = divData.total;
                 let h = 0;
                 
-                // 전체 막대 높이 계산 (기존 유지)
                 if (div <= 0) {
                     h = 2;
                 } else if (divDiff <= 0) {
@@ -1253,12 +1239,10 @@
                 const isCurrent = m === currentMonth;
                 const isDec = m === 12;
                 
-                // 구역별 높이 비율 계산 (퍼센트)
                 const basePct = div > 0 ? (divData.base / div) * 100 : 0;
                 const dripPct = div > 0 ? (divData.drip / div) * 100 : 0;
                 const dcaPct = div > 0 ? (divData.dca / div) * 100 : 0;
 
-                // 베이스 구역(과거/현재/미래) 색상 테마 결정
                 let bgClassBase = 'bg-slate-700/60'; 
                 let labelColor = 'text-slate-500';
                 let valColor = 'text-slate-400';
@@ -1284,7 +1268,6 @@
                     shortVal = formatMoney(div);
                 }
 
-                // 스택 막대 내부 HTML 조립 (위에서 아래로 DCA -> DRIP -> Base 순서로 쌓임)
                 let innerHtml = '';
                 if (dcaPct > 0) {
                     innerHtml += `<div class="w-full bg-gradient-to-t from-purple-500 to-purple-400 border-b border-slate-800/30" style="height: ${dcaPct}%;"></div>`;
@@ -1296,7 +1279,6 @@
                     innerHtml += `<div class="w-full ${bgClassBase}" style="height: ${basePct}%;"></div>`;
                 }
 
-                // 스마트 툴팁 (상세 내역 표시)
                 let tooltipHtml = `
                     <div class="absolute -top-14 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 bg-cardBg p-2 rounded-lg text-white z-30 shadow-[0_4px_20px_rgba(0,0,0,0.5)] border border-slate-600 pointer-events-none flex flex-col gap-1 text-[9px] whitespace-nowrap transition-opacity">
                         <div class="font-extrabold border-b border-slate-600 pb-1 mb-0.5 text-[10px]">총액: ${formatMoney(div)}원</div>
@@ -1420,7 +1402,7 @@
             let finalAsset = lineChartData.length > 11 ? lineChartData[11].tr : 0;
             let finalPrincipal = lineChartData.length > 11 ? lineChartData[11].principal : basePrincipal; 
             
-            const annualWithDrip = history.reduce((a, b) => a + b.total, 0); // v1.44 total로 접근 
+            const annualWithDrip = history.reduce((a, b) => a + b.total, 0); 
             
             let divSummaryHtml = '';
             if (annualWithDrip > annualWithoutDrip) {
@@ -1523,6 +1505,7 @@
                             let badgeHtml = '';
                             let exDateInfo = '';
                             let actionButtonHtml = '';
+                            let leftBarColor = 'bg-brand';
 
                             if (mData.date) {
                                 const exD = new Date(mData.date);
@@ -1535,8 +1518,6 @@
                                 const isDripDone = h.dripStatus && h.dripStatus[currentM];
 
                                 if (exD.getMonth() === today.getMonth() && exD.getFullYear() === today.getFullYear() && guideDiv > 0 && !isDripDone) {
-                                    let leftBarColor = 'bg-brand';
-                                    
                                     if (!isActual) {
                                         highlightClass = 'bg-gradient-to-r from-blue-900/60 to-brand/20 border-brand shadow-[0_0_15px_rgba(59,130,246,0.35)] ring-1 ring-brand/50 transition-all duration-500';
                                         leftBarColor = 'bg-blue-400';
@@ -1569,53 +1550,40 @@
                                             </div>
                                         `;
                                     }
-                                    
-                                    windmillGuide = `
-                                        <div class="mt-4 mb-2 ml-[44px] sm:ml-[52px] ${highlightClass} rounded-2xl p-3 sm:p-4 border shadow-inner relative overflow-hidden">
-                                            <div class="absolute left-0 top-0 bottom-0 w-1 ${leftBarColor} rounded-l-2xl"></div>
-                                            ${badgeHtml}
-                                            <div class="flex flex-col relative z-10">
-                                                <div class="flex items-center justify-between gap-2">
-                                                    <div class="flex-1 min-w-0">
-                                                        <p class="text-[10px] text-slate-400 mb-1 flex items-center uppercase tracking-wide">
-                                                            <i class="fas fa-sync-alt text-brand mr-1.5"></i> 재투자 타겟 ${exDateInfo}
-                                                        </p>
-                                                        <p class="text-[12px] sm:text-sm font-bold text-white mb-0.5 truncate pr-14">${tName}</p>
-                                                        <p class="text-[10px] sm:text-[11px] text-slate-400 mt-1">${divLabel} <span class="${divTextClass}">${formatMoney(guideDiv)}원</span> <span class="mx-1">→</span> <span class="text-brand font-bold">${canBuyQty}주</span> 매수</p>
-                                                    </div>
-                                                    <div class="bg-blue-500/20 px-2 sm:px-3 py-2 rounded-xl text-center border border-blue-500/30 flex-shrink-0 min-w-[50px] shadow-sm">
-                                                        <p class="text-[9px] sm:text-[10px] text-blue-300 mb-0.5">잔돈</p>
-                                                        <p class="text-[11px] sm:text-xs font-bold text-white">${formatMoney(leftover)}원</p>
-                                                    </div>
-                                                </div>
-                                                ${actionButtonHtml}
-                                            </div>
-                                        </div>
-                                    `;
-                                } else {
-                                    windmillGuide = `
-                                        <div class="mt-4 mb-2 ml-[44px] sm:ml-[52px] ${highlightClass} rounded-2xl p-3 sm:p-4 border shadow-inner relative overflow-hidden">
-                                            <div class="absolute left-0 top-0 bottom-0 w-1 bg-brand rounded-l-2xl"></div>
-                                            <div class="flex items-center justify-between gap-2 relative z-10">
-                                                <div class="flex-1 min-w-0">
-                                                    <p class="text-[10px] text-slate-400 mb-1 flex items-center uppercase tracking-wide">
-                                                        <i class="fas fa-sync-alt text-brand mr-1.5"></i> 재투자 타겟 ${exDateInfo}
-                                                    </p>
-                                                    <p class="text-[12px] sm:text-sm font-bold text-white mb-0.5 truncate pr-14">${tName}</p>
-                                                    <p class="text-[10px] sm:text-[11px] text-slate-400 mt-1">${divLabel} <span class="${divTextClass}">${formatMoney(guideDiv)}원</span> <span class="mx-1">→</span> <span class="text-brand font-bold">${canBuyQty}주</span> 매수</p>
-                                                </div>
-                                                <div class="bg-blue-500/20 px-2 sm:px-3 py-2 rounded-xl text-center border border-blue-500/30 flex-shrink-0 min-w-[50px] shadow-sm">
-                                                    <p class="text-[9px] sm:text-[10px] text-blue-300 mb-0.5">잔돈</p>
-                                                    <p class="text-[11px] sm:text-xs font-bold text-white">${formatMoney(leftover)}원</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    `;
                                 }
                             }
+
+                            // v1.46: 잔돈 삭제 및 수익률 정보 내부로 이동 (2단 꽉찬 레이아웃 적용)
+                            windmillGuide = `
+                                <div class="mt-2.5 ${highlightClass} rounded-xl sm:rounded-2xl p-3 sm:p-3.5 border shadow-inner relative overflow-hidden w-full">
+                                    <div class="absolute left-0 top-0 bottom-0 w-1 ${leftBarColor}"></div>
+                                    ${badgeHtml}
+                                    <div class="flex flex-col relative z-10">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <div class="flex-1 min-w-0 pr-2 border-r border-slate-700/50">
+                                                <p class="text-[10px] text-slate-400 mb-1.5 flex items-center uppercase tracking-wide">
+                                                    <i class="fas fa-sync-alt text-brand mr-1.5"></i> 재투자 타겟 ${exDateInfo}
+                                                </p>
+                                                <p class="text-[12px] sm:text-[13px] font-bold text-white mb-0.5 truncate pr-2">${tName}</p>
+                                                <p class="text-[10px] sm:text-[11px] text-slate-400 mt-1">${divLabel} <span class="${divTextClass}">${formatMoney(guideDiv)}원</span> <span class="mx-1">→</span> <span class="text-brand font-bold">${canBuyQty}주</span> 매수</p>
+                                            </div>
+                                            <div class="flex flex-col items-end gap-1 flex-shrink-0 text-right min-w-[70px]">
+                                                <p class="text-[10px] sm:text-[11px] font-bold ${pnlColor} flex items-center justify-end gap-1 mb-0.5">
+                                                    <span class="text-[8px] bg-brand/20 border border-brand/20 px-1 py-[1px] rounded text-brand font-bold leading-none">TR</span>
+                                                    ${pnlSign}${pnlPct.toFixed(2)}%
+                                                </p>
+                                                <p class="text-[8.5px] sm:text-[9px] text-slate-400">순수 <span class="${capColor} font-medium">${capSign}${capitalPnlPct.toFixed(2)}%</span></p>
+                                                <p class="text-[8.5px] sm:text-[9px] text-slate-400">배당 <span class="text-brand font-medium">${divSign}${dividendPnlPct.toFixed(2)}%</span></p>
+                                            </div>
+                                        </div>
+                                        ${actionButtonHtml}
+                                    </div>
+                                </div>
+                            `;
+
                         } else if (h.targetTicker) {
                             windmillGuide = `
-                                <div class="mt-4 mb-2 ml-[44px] sm:ml-[52px] bg-slate-800/50 rounded-2xl p-4 border border-slate-700/50">
+                                <div class="mt-4 bg-slate-800/50 rounded-xl p-3 border border-slate-700/50 w-full">
                                     <p class="text-[11px] text-slate-400"><i class="fas fa-exclamation-triangle text-yellow-500 mr-1"></i> 타겟 종목(${h.targetTicker})의 데이터가 없습니다.</p>
                                 </div>
                             `;
@@ -1623,48 +1591,47 @@
 
                         const initial = getTickerName(h.ticker).substring(0, 1);
 
+                        // v1.46: 배지를 좌측 사이드바 구조로 완벽히 정렬
                         const scheduleBadge = DIV_SCHEDULE[h.ticker] === "early"
-                            ? '<span class="text-[8px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1.5 py-[3px] rounded font-bold tracking-widest leading-none whitespace-nowrap shadow-sm">월초</span>'
-                            : '<span class="text-[8px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-[3px] rounded font-bold tracking-widest leading-none whitespace-nowrap shadow-sm">월중</span>';
+                            ? '<div class="text-[8px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1 py-[3px] rounded font-bold tracking-widest leading-none whitespace-nowrap shadow-sm w-full text-center">월초</div>'
+                            : '<div class="text-[8px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1 py-[3px] rounded font-bold tracking-widest leading-none whitespace-nowrap shadow-sm w-full text-center">월중</div>';
                         
                         const dcaBadge = (h.dcaAmount && h.dcaAmount > 0)
-                            ? `<span class="text-[8px] bg-purple-500/20 text-purple-400 border border-purple-500/30 px-1.5 py-[3px] rounded font-bold tracking-widest leading-none whitespace-nowrap shadow-sm ml-1.5">DCA ${formatMoney(h.dcaAmount / 10000)}만/월</span>`
+                            ? `<div class="text-[8px] bg-purple-500/20 text-purple-400 border border-purple-500/30 px-0.5 py-[3px] rounded font-bold tracking-tighter leading-none whitespace-nowrap shadow-sm w-full text-center">DCA ${formatMoney(h.dcaAmount / 10000)}만</div>`
                             : '';
 
                         return `
-                            <div class="cursor-pointer group py-2" onclick="openEditHoldingModal('${acc.id}', '${h.id}')">
-                                <div class="flex items-start justify-between gap-3">
-                                    <div class="flex items-start gap-3 flex-1 min-w-0 pr-1">
-                                        <div class="flex flex-col items-center gap-1.5 flex-shrink-0 w-10 mt-0.5">
-                                            <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-slate-300 font-bold border border-slate-700 group-hover:border-brand/50 transition-colors shadow-sm">
-                                                ${initial}
-                                            </div>
-                                            ${scheduleBadge}
+                            <div class="cursor-pointer group py-3" onclick="openEditHoldingModal('${acc.id}', '${h.id}')">
+                                <div class="flex items-start gap-3 sm:gap-4 w-full">
+                                    
+                                    <!-- 1. 좌측 사이드바 (아이콘 + 배지 스택) -->
+                                    <div class="flex flex-col items-center gap-1.5 flex-shrink-0 w-11 sm:w-12 pt-0.5">
+                                        <div class="w-11 h-11 rounded-xl bg-slate-800 flex items-center justify-center text-slate-300 font-bold text-lg border border-slate-700 group-hover:border-brand/50 transition-colors shadow-sm">
+                                            ${initial}
                                         </div>
-                                        <div class="flex-1 min-w-0 flex flex-col justify-center mt-0.5">
-                                            <div class="flex items-center mb-1 w-full">
-                                                <p class="font-bold text-white text-xs sm:text-[13px] tracking-tight truncate inline-block group-hover:text-brand transition-colors" style="max-width: ${h.dcaAmount > 0 ? '50%' : '75%'};">${getTickerName(h.ticker)}</p>
-                                                <div class="inline-block flex-shrink-0">${dcaBadge}</div>
-                                            </div>
-                                            <p class="text-[10px] sm:text-[11px] text-slate-400">${formatMoney(h.quantity)}주 <span class="mx-0.5">·</span> 평단 ${formatMoney(h.avgPrice)}</p>
-                                        </div>
+                                        ${scheduleBadge}
+                                        ${dcaBadge}
                                     </div>
-                                    <div class="text-right flex-shrink-0 pl-1 mt-0.5">
-                                        <p class="font-bold text-white text-[13px] sm:text-sm mb-1">${formatMoney(asset)}원</p>
-                                        <div class="flex flex-col items-end gap-0.5">
-                                            <p class="text-[10px] sm:text-[11px] font-bold ${pnlColor} flex items-center justify-end gap-1">
-                                                <span class="text-[8px] bg-brand/20 border border-brand/20 px-1 py-[1px] rounded text-brand font-bold leading-none">TR</span>
-                                                ${pnlSign}${pnlPct.toFixed(2)}%
-                                            </p>
-                                            <div class="flex items-center gap-1.5 text-[8px] sm:text-[9px] font-medium mt-0.5">
-                                                <span class="text-slate-400">순수 <span class="${capColor}">${capSign}${capitalPnlPct.toFixed(2)}%</span></span>
-                                                <span class="text-slate-600">|</span>
-                                                <span class="text-slate-400">배당 <span class="text-brand">${divSign}${dividendPnlPct.toFixed(2)}%</span></span>
+                                    
+                                    <!-- 2. 우측 콘텐츠 (타이틀 + 재투자 박스) -->
+                                    <div class="flex-1 min-w-0 flex flex-col w-full">
+                                        <!-- 종목명 및 총액 -->
+                                        <div class="flex justify-between items-start gap-2 w-full px-1">
+                                            <div class="flex-1 min-w-0">
+                                                <p class="font-bold text-white text-[13px] sm:text-[14px] leading-snug group-hover:text-brand transition-colors whitespace-normal break-keep">
+                                                    ${getTickerName(h.ticker)}
+                                                </p>
+                                                <p class="text-[10px] text-slate-500 mt-1.5">${h.ticker} · ${formatMoney(h.quantity)}주 · 평단 ${formatMoney(h.avgPrice)}</p>
+                                            </div>
+                                            <div class="text-right flex-shrink-0 pt-0.5">
+                                                <p class="font-bold text-white text-[14px] sm:text-[15px] tracking-tight">${formatMoney(asset)}원</p>
                                             </div>
                                         </div>
+
+                                        <!-- 재투자 박스 (수익률 포함) -->
+                                        ${windmillGuide}
                                     </div>
                                 </div>
-                                ${windmillGuide}
                             </div>
                         `;
                     };
