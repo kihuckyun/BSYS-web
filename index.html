@@ -54,42 +54,13 @@
         .glow-card { box-shadow: 0 10px 30px -10px rgba(59, 130, 246, 0.3); }
         circle { transition: stroke-dasharray 1s ease-in-out, stroke-dashoffset 1s ease-in-out; }
 
-        .capture-mode * {
-            backdrop-filter: none !important;
-            -webkit-backdrop-filter: none !important;
-        }
-        .capture-mode .bg-bgMain { background-color: #0b1120 !important; }
-        .capture-mode .bg-slate-800\/40,
-        .capture-mode .bg-slate-800\/50,
-        .capture-mode .bg-cardBg { background-color: #1e293b !important; border-color: #334155 !important; }
-        .capture-mode .bg-blue-800\/40,
-        .capture-mode .bg-blue-800\/50,
-        .capture-mode .bg-blue-900\/30,
-        .capture-mode .bg-blue-900\/50,
-        .capture-mode .bg-blue-900\/60 { background-color: #1e3a8a !important; border-color: #3b82f6 !important; }
-        .capture-mode .bg-brand\/10,
-        .capture-mode .bg-brand\/20 { background-color: #172554 !important; border-color: #3b82f6 !important; }
-        .capture-mode .bg-blue-500\/10,
-        .capture-mode .bg-blue-500\/20 { background-color: #1e3a8a !important; border-color: #3b82f6 !important; }
-        .capture-mode .bg-emerald-900\/50,
-        .capture-mode .bg-emerald-500\/20,
-        .capture-mode .bg-emerald-900\/60,
-        .capture-mode .bg-teal-500\/20 { background-color: #064e3b !important; border-color: #10b981 !important; }
-        .capture-mode .bg-red-900\/40 { background-color: #7f1d1d !important; border-color: #ef4444 !important; }
-        .capture-mode .border-slate-800\/60,
-        .capture-mode .border-slate-700\/50,
-        .capture-mode .border-slate-600\/50 { border-color: #334155 !important; }
-        .capture-mode .shadow-sm, 
-        .capture-mode .shadow-lg, 
-        .capture-mode .shadow-inner { box-shadow: none !important; }
-        .capture-mode .drop-shadow-lg { filter: none !important; }
-    </style>
-
-    <!-- html2canvas 에러 방지를 위해 스케일링 전용 CSS를 별도 분리 -->
-    <style id="font-scaling-styles">
+        /* ==============================================================
+           글씨 크기 전용 스케일링 (html2canvas 에러 방지용 특수 속성 선택자 사용)
+           ============================================================== */
         body.font-sm-mode { font-size: 14px !important; }
         body.font-lg-mode { font-size: 18px !important; }
 
+        /* 축소 모드 (-2px) */
         body.font-sm-mode [class~="text-[7px]"] { font-size: 5px !important; }
         body.font-sm-mode [class~="text-[8px]"] { font-size: 6px !important; }
         body.font-sm-mode [class~="text-[8.5px]"] { font-size: 6.5px !important; }
@@ -111,6 +82,7 @@
         body.font-sm-mode [class~="text-4xl"] { font-size: 34px !important; }
         body.font-sm-mode [class~="text-5xl"] { font-size: 46px !important; }
 
+        /* 확대 모드 (+2px) */
         body.font-lg-mode [class~="text-[7px]"] { font-size: 9px !important; }
         body.font-lg-mode [class~="text-[8px]"] { font-size: 10px !important; }
         body.font-lg-mode [class~="text-[8.5px]"] { font-size: 10.5px !important; }
@@ -132,6 +104,7 @@
         body.font-lg-mode [class~="text-4xl"] { font-size: 38px !important; }
         body.font-lg-mode [class~="text-5xl"] { font-size: 50px !important; }
 
+        /* 차트 텍스트 겹침 방지 처리 */
         body.font-lg-mode .chart-label { font-size: 8px !important; letter-spacing: -0.5px !important; }
         body.font-sm-mode .chart-label { font-size: 6px !important; }
 
@@ -165,6 +138,36 @@
             body.font-lg-mode .chart-label[class~="sm:text-[8px]"] { font-size: 8.5px !important; }
             body.font-sm-mode .chart-label[class~="sm:text-[8px]"] { font-size: 6.5px !important; }
         }
+
+        .capture-mode * {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+        }
+        .capture-mode .bg-bgMain { background-color: #0b1120 !important; }
+        .capture-mode .bg-slate-800\/40,
+        .capture-mode .bg-slate-800\/50,
+        .capture-mode .bg-cardBg { background-color: #1e293b !important; border-color: #334155 !important; }
+        .capture-mode .bg-blue-800\/40,
+        .capture-mode .bg-blue-800\/50,
+        .capture-mode .bg-blue-900\/30,
+        .capture-mode .bg-blue-900\/50,
+        .capture-mode .bg-blue-900\/60 { background-color: #1e3a8a !important; border-color: #3b82f6 !important; }
+        .capture-mode .bg-brand\/10,
+        .capture-mode .bg-brand\/20 { background-color: #172554 !important; border-color: #3b82f6 !important; }
+        .capture-mode .bg-blue-500\/10,
+        .capture-mode .bg-blue-500\/20 { background-color: #1e3a8a !important; border-color: #3b82f6 !important; }
+        .capture-mode .bg-emerald-900\/50,
+        .capture-mode .bg-emerald-500\/20,
+        .capture-mode .bg-emerald-900\/60,
+        .capture-mode .bg-teal-500\/20 { background-color: #064e3b !important; border-color: #10b981 !important; }
+        .capture-mode .bg-red-900\/40 { background-color: #7f1d1d !important; border-color: #ef4444 !important; }
+        .capture-mode .border-slate-800\/60,
+        .capture-mode .border-slate-700\/50,
+        .capture-mode .border-slate-600\/50 { border-color: #334155 !important; }
+        .capture-mode .shadow-sm, 
+        .capture-mode .shadow-lg, 
+        .capture-mode .shadow-inner { box-shadow: none !important; }
+        .capture-mode .drop-shadow-lg { filter: none !important; }
     </style>
 </head>
 <body class="antialiased font-sans relative pb-28">
@@ -191,7 +194,7 @@
         </div>
         <div class="flex items-center gap-1 sm:gap-2">
             <div class="text-[10px] font-bold text-brand bg-brand/10 px-2 py-1 rounded-lg border border-brand/20 shadow-sm tracking-wide hidden sm:block mr-1">
-                by 에이미 v1.57
+                by 에이미 v1.58
             </div>
             <button onclick="openSettingsModal()" class="w-8 h-8 rounded-full bg-cardBg flex items-center justify-center text-slate-400 hover:text-white hover:bg-cardBgLight transition-colors shadow-sm" title="글씨 크기 설정">
                 <span class="font-bold font-serif text-[11px]">Aa</span>
@@ -736,6 +739,7 @@
                 captureHeader.classList.remove('hidden');
                 
                 const bottomNav = document.getElementById('bottom-nav');
+                const originalNavDisplay = bottomNav.style.display;
                 bottomNav.style.display = 'none';
 
                 await new Promise(resolve => setTimeout(resolve, 500));
@@ -777,7 +781,11 @@
                 });
 
                 document.body.removeChild(clone);
+                captureHeader.classList.add('hidden');
                 
+                bottomNav.style.display = originalNavDisplay;
+                document.body.classList.remove('capture-mode');
+
                 const link = document.createElement('a');
                 link.download = `Income_Snowball_Report_${today.toISOString().slice(0,10).replace(/-/g, '')}.png`;
                 link.href = canvas.toDataURL('image/png', 1.0);
@@ -786,6 +794,9 @@
                 showToast("고화질 보고서 이미지가 저장되었습니다.");
             } catch (err) {
                 console.error(err);
+                document.body.classList.remove('capture-mode');
+                document.getElementById('capture-header').classList.add('hidden');
+                document.getElementById('bottom-nav').style.display = '';
                 showToast("이미지 캡처에 실패했습니다.");
             } finally {
                 // 에러가 나더라도 무조건 원래 상태로 복구되도록 finally 블록 처리
@@ -1208,11 +1219,17 @@
                         ? '<span class="text-[8px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1.5 py-[3px] rounded font-bold tracking-widest leading-none whitespace-nowrap shadow-sm">월초</span>'
                         : '<span class="text-[8px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-[3px] rounded font-bold tracking-widest leading-none whitespace-nowrap shadow-sm">월중</span>';
                     
+                    // v1.58: 종목명 15자 초과 시 11자 남기고 말줄임표 처리 (대시보드 하단 리스트)
                     const fullName = getTickerName(ticker);
                     let nameHtml = `<span class="block">${fullName}</span>`;
                     const spaceIdx = fullName.indexOf(' ');
                     if (spaceIdx !== -1) {
-                        nameHtml = `<span class="block text-slate-400 font-medium text-[10px] sm:text-[11px] mb-[2px] leading-none tracking-wider">${fullName.substring(0, spaceIdx)}</span><span class="block">${fullName.substring(spaceIdx + 1)}</span>`;
+                        const brandName = fullName.substring(0, spaceIdx);
+                        let restName = fullName.substring(spaceIdx + 1);
+                        if (restName.length > 15) {
+                            restName = restName.substring(0, 11) + '...';
+                        }
+                        nameHtml = `<span class="block text-slate-400 font-medium text-[10px] sm:text-[11px] mb-[2px] leading-none tracking-wider">${brandName}</span><span class="block">${restName}</span>`;
                     }
 
                     return `
@@ -1756,13 +1773,17 @@
                             ? `<span class="text-[8px] bg-purple-500/20 text-purple-400 border border-purple-500/30 px-1.5 py-[3px] rounded font-bold tracking-tighter leading-none whitespace-nowrap shadow-sm">DCA ${formatMoney(h.dcaAmount / 10000)}만</span>`
                             : '';
 
-                        // 종목명을 브랜드명과 나머지로 분리하여 두 줄로 표기 (포트폴리오 리스트)
+                        // v1.58: 종목명 15자 초과 시 11자 남기고 말줄임표 처리 (포트폴리오 리스트)
                         const fullName = getTickerName(h.ticker);
                         let nameHtml = `<span class="block">${fullName}</span>`;
                         const spaceIdx = fullName.indexOf(' ');
                         if (spaceIdx !== -1) {
-                            // v1.57: break-all 속성을 빼고 단어 단위 줄바꿈을 유지하도록 복원 (break-keep)
-                            nameHtml = `<span class="block text-slate-400 font-medium text-[11px] sm:text-xs mb-[2px] leading-none tracking-wider">${fullName.substring(0, spaceIdx)}</span><span class="block break-keep whitespace-normal">${fullName.substring(spaceIdx + 1)}</span>`;
+                            const brandName = fullName.substring(0, spaceIdx);
+                            let restName = fullName.substring(spaceIdx + 1);
+                            if (restName.length > 15) {
+                                restName = restName.substring(0, 11) + '...';
+                            }
+                            nameHtml = `<span class="block text-slate-400 font-medium text-[11px] sm:text-xs mb-[2px] leading-none tracking-wider">${brandName}</span><span class="block break-keep whitespace-normal">${restName}</span>`;
                         }
 
                         return `
@@ -2035,11 +2056,16 @@
                     canBuyQty = Math.floor(actualCurrentDiv / targetData.price);
                 }
                 
-                // 타겟 종목명 두줄 표기 처리
+                // v1.58: 종목명 15자 초과 시 11자 남기고 말줄임표 처리 (추가 매수 모달창 내부)
                 let tNameHtml = `<span class="block truncate">${getTickerName(sourceH.ticker)}</span>`;
                 if (getTickerName(sourceH.ticker).indexOf(' ') !== -1) {
                     const sIdx = getTickerName(sourceH.ticker).indexOf(' ');
-                    tNameHtml = `<span class="block text-emerald-500 font-medium text-[9px] sm:text-[10px] mb-[1px] leading-none tracking-wider">${getTickerName(sourceH.ticker).substring(0, sIdx)}</span><span class="block truncate">${getTickerName(sourceH.ticker).substring(sIdx + 1)}</span>`;
+                    const brandName = getTickerName(sourceH.ticker).substring(0, sIdx);
+                    let restName = getTickerName(sourceH.ticker).substring(sIdx + 1);
+                    if (restName.length > 15) {
+                        restName = restName.substring(0, 11) + '...';
+                    }
+                    tNameHtml = `<span class="block text-emerald-500 font-medium text-[9px] sm:text-[10px] mb-[1px] leading-none tracking-wider">${brandName}</span><span class="block truncate">${restName}</span>`;
                 }
 
                 targetContainer.innerHTML = `
