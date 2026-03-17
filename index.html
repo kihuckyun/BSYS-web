@@ -162,7 +162,7 @@
         </div>
         <div class="flex items-center gap-1 sm:gap-2">
             <div class="text-[10px] font-bold text-brand bg-brand/10 px-2 py-1 rounded-lg border border-brand/20 shadow-sm tracking-wide hidden sm:block mr-1">
-                by 에이미 v1.59
+                by 에이미 v1.60
             </div>
             <button onclick="openSettingsModal()" class="w-8 h-8 rounded-full bg-cardBg flex items-center justify-center text-slate-400 hover:text-white hover:bg-cardBgLight transition-colors shadow-sm" title="글씨 크기 설정">
                 <span class="font-bold font-serif text-[11px]">Aa</span>
@@ -661,10 +661,6 @@
             });
         }
 
-        /* -------------------------------------------------------------
-           [삭제됨] 스크린샷 캡처 기능 삭제 (v1.59 업데이트)
-           ------------------------------------------------------------- */
-
         async function forceSyncData() {
             const loader = document.getElementById('global-loading');
             const loaderText = document.getElementById('loading-text');
@@ -952,8 +948,9 @@
             document.getElementById('dash-monthly-mid-div').textContent = formatMoney(monthlyDivMid) + '원';
             
             document.getElementById('dash-prev-div').textContent = formatMoney(prevMonthlyDiv) + '원';
-            document.getElementById('dash-next-div').textContent = formatMoney(nextMonthlyDivBase + nextMonthAddedDiv) + '원';
             
+            // v1.60: dash-next-div 업데이트는 하단의 renderDashboardSimulation 함수가 담당하도록 변경 (차트 데이터 동기화)
+
             const LIMIT_20M = 20000000;
             const taxPct = Math.min((annualTaxablePreTax / LIMIT_20M) * 100, 100);
             
@@ -1068,7 +1065,7 @@
                         ? '<span class="text-[8px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1.5 py-[3px] rounded font-bold tracking-widest leading-none whitespace-nowrap shadow-sm">월초</span>'
                         : '<span class="text-[8px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-[3px] rounded font-bold tracking-widest leading-none whitespace-nowrap shadow-sm">월중</span>';
                     
-                    // v1.58: 종목명 15자 초과 시 11자 남기고 말줄임표 처리 (대시보드 하단 리스트)
+                    // 종목명 15자 초과 시 11자 남기고 말줄임표 처리 (대시보드 하단 리스트)
                     const fullName = getTickerName(ticker);
                     let nameHtml = `<span class="block">${fullName}</span>`;
                     const spaceIdx = fullName.indexOf(' ');
@@ -1487,6 +1484,20 @@
                 <li class="flex items-start gap-2.5"><div class="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 flex-shrink-0"></div> <div class="flex-1 leading-relaxed">연말 최종 자산(TR) 예측: <strong class="text-white">${formatMoney(baseAsset)}원</strong> <i class="fas fa-arrow-right text-[9px] mx-1 text-slate-500"></i> <strong class="text-emerald-400">${formatMoney(finalAsset)}원</strong></div></li>
                 <li class="flex items-start gap-2.5"><div class="w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.6)] mt-1.5 flex-shrink-0"></div> <div class="flex-1 leading-relaxed">예상 총 투자 원금: <span class="text-slate-300 font-medium mr-2">${formatMoney(finalPrincipal)}원</span> <i class="fas fa-caret-right text-slate-500 text-[10px] mx-1"></i> TR: <strong class="${trRateColor}">${trRateSign}${predictedTRRate.toFixed(2)}%</strong></div></li>
             `;
+
+            // v1.60: 시뮬레이션 데이터를 기반으로 대시보드 상단 '익월 예상' 값 업데이트 반영
+            if (history.length > 0) {
+                let displayNextDiv = 0;
+                // currentMonth는 1-based (예: 3월이면 3), history 배열은 0-based (0이 1월, 2가 3월).
+                // 즉 history[currentMonth]가 익월(예: 3이면 4월(인덱스3)) 데이터임.
+                if (currentMonth < 12 && history[currentMonth]) {
+                    displayNextDiv = history[currentMonth].total;
+                } else if (history[11]) {
+                    // 12월일 경우 시뮬레이션은 당해년도까지만 있으므로 12월 값을 근사치로 대체
+                    displayNextDiv = history[11].total;
+                }
+                document.getElementById('dash-next-div').textContent = formatMoney(displayNextDiv) + '원';
+            }
         }
 
         function renderPortfolio() {
@@ -1865,7 +1876,7 @@
             document.getElementById('modal-add-holding').classList.remove('hidden');
         }
 
-        // v1.49: 스마트 추가 매수 모달 (재투자 가이드 동적 주입 및 대상 종목 스위칭)
+        // v1.60: 스마트 추가 매수 모달 (타겟 종목명 분리/강조하여 오해 방지 개선)
         function openQuickAddModal(accId, holdingId, isDrip = false) {
             const acc = userData.accounts.find(a => a.id === accId);
             const sourceH = acc.holdings.find(h => h.id === holdingId);
@@ -1905,31 +1916,35 @@
                     canBuyQty = Math.floor(actualCurrentDiv / targetData.price);
                 }
                 
-                // v1.58: 종목명 15자 초과 시 11자 남기고 말줄임표 처리 (추가 매수 모달창 내부)
-                let tNameHtml = `<span class="block truncate">${getTickerName(sourceH.ticker)}</span>`;
-                if (getTickerName(sourceH.ticker).indexOf(' ') !== -1) {
-                    const sIdx = getTickerName(sourceH.ticker).indexOf(' ');
-                    const brandName = getTickerName(sourceH.ticker).substring(0, sIdx);
-                    let restName = getTickerName(sourceH.ticker).substring(sIdx + 1);
+                // 타겟 종목을 매수해야함을 명확하게 보여주는 UI 개선
+                let tNameHtml = `<span class="block truncate">${getTickerName(targetTicker)}</span>`;
+                if (getTickerName(targetTicker).indexOf(' ') !== -1) {
+                    const sIdx = getTickerName(targetTicker).indexOf(' ');
+                    const brandName = getTickerName(targetTicker).substring(0, sIdx);
+                    let restName = getTickerName(targetTicker).substring(sIdx + 1);
                     if (restName.length > 15) {
                         restName = restName.substring(0, 11) + '...';
                     }
                     tNameHtml = `<span class="block text-emerald-500 font-medium text-[9px] sm:text-[10px] mb-[1px] leading-none tracking-wider">${brandName}</span><span class="block truncate">${restName}</span>`;
                 }
 
+                // 본 종목(출발지) 이름 축약
+                let sourceShortName = getTickerName(sourceH.ticker);
+                if(sourceShortName.length > 10) sourceShortName = sourceShortName.substring(0, 10) + '...';
+
                 targetContainer.innerHTML = `
                     <div class="bg-gradient-to-r from-emerald-900/40 to-teal-900/20 border border-emerald-500/30 rounded-2xl p-4 shadow-inner relative overflow-hidden w-full">
                         <div class="absolute left-0 top-0 bottom-0 w-1 bg-emerald-400"></div>
                         <div class="flex flex-col relative z-10 pl-1">
                             <div class="text-[11px] text-emerald-400 mb-2 flex items-start uppercase tracking-wide font-bold">
-                                <i class="fas fa-coins mr-1.5 text-yellow-300 mt-0.5"></i>
+                                <i class="fas fa-sync-alt mr-1.5 text-yellow-300 mt-0.5"></i>
                                 <div>
+                                    <span class="block text-[9px] mb-1 opacity-80 font-medium text-emerald-200/80">${sourceShortName} 배당금으로 타겟 매수</span>
                                     ${tNameHtml}
-                                    <span class="block text-[9px] mt-0.5 opacity-80">배당금</span>
                                 </div>
                             </div>
                             <p class="text-[12px] text-slate-300 bg-slate-800/60 px-3 py-2.5 rounded-xl border border-slate-700/50 flex items-center justify-between">
-                                <span>실제 수령액 <span class="text-white font-bold ml-1">${formatMoney(actualCurrentDiv)}원</span></span>
+                                <span>배당금 <span class="text-white font-bold ml-1">${formatMoney(actualCurrentDiv)}원</span></span>
                                 <span><i class="fas fa-arrow-right text-emerald-500 text-[10px] mx-2"></i></span>
                                 <span><span class="text-emerald-400 font-bold text-[14px]">${canBuyQty}주</span> 매수 가능</span>
                             </p>
@@ -1948,7 +1963,7 @@
             document.getElementById('modal-quick-add').classList.remove('hidden');
         }
 
-        // v1.49: 빠른 추가 매수 반영 로직 (일반 본주 매수 or 타겟 종목 매수 자동 핸들링)
+        // 빠른 추가 매수 반영 로직
         function submitQuickAdd() {
             const accId = document.getElementById('quick-acc-id').value;
             const sourceHId = document.getElementById('quick-source-id').value;
