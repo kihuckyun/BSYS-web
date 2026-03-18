@@ -162,7 +162,7 @@
         </div>
         <div class="flex items-center gap-1 sm:gap-2">
             <div class="text-[10px] font-bold text-brand bg-brand/10 px-2 py-1 rounded-lg border border-brand/20 shadow-sm tracking-wide hidden sm:block mr-1">
-                by 에이미 v1.60
+                by 에이미 v1.64
             </div>
             <button onclick="openSettingsModal()" class="w-8 h-8 rounded-full bg-cardBg flex items-center justify-center text-slate-400 hover:text-white hover:bg-cardBgLight transition-colors shadow-sm" title="글씨 크기 설정">
                 <span class="font-bold font-serif text-[11px]">Aa</span>
@@ -293,8 +293,8 @@
                         </h3>
                     </div>
                     <div class="w-full mt-2 flex flex-col items-center relative" id="dash-line-chart"></div>
-                    <div class="mt-3 pt-3 border-t border-slate-700/50 w-full">
-                        <ul class="text-[11px] sm:text-xs space-y-2.5 text-slate-400" id="dash-sim-summary"></ul>
+                    <div class="mt-4 pt-4 border-t border-slate-700/50 w-full">
+                        <ul class="text-[11px] sm:text-xs space-y-4 text-slate-400" id="dash-sim-summary"></ul>
                     </div>
                 </div>
             </div>
@@ -614,7 +614,7 @@
         };
 
         /* ==========================================
-           2. 초기화 및 API 통신, 캡처, 설정 기능
+           2. 초기화 및 API 통신, 설정 기능
            ========================================== */
         document.addEventListener('DOMContentLoaded', async () => {
             loadLocalData();
@@ -829,6 +829,17 @@
            4. UI 렌더링 로직
            ========================================== */
         const formatMoney = (num) => Math.round(num).toLocaleString();
+
+        const createSmoothPath = (pts) => {
+            if(pts.length === 0) return '';
+            if(pts.length === 1) return `M ${pts[0].x},${pts[0].y}`;
+            let d = `M ${pts[0].x},${pts[0].y}`;
+            for(let i=0; i<pts.length-1; i++) {
+                const dx = (pts[i+1].x - pts[i].x) * 0.35;
+                d += ` C ${pts[i].x + dx},${pts[i].y} ${pts[i+1].x - dx},${pts[i+1].y} ${pts[i+1].x},${pts[i+1].y}`;
+            }
+            return d;
+        };
         
         function renderAll() {
             renderDashboard();
@@ -938,8 +949,11 @@
                         nextMonthAddedDiv += (sharesToBuy * targetData.div) * (1 - targetActualTaxRate);
                     }
 
-                    if(!holdingsSummary[h.ticker]) holdingsSummary[h.ticker] = 0;
-                    holdingsSummary[h.ticker] += currentAsset;
+                    if(!holdingsSummary[h.ticker]) {
+                        holdingsSummary[h.ticker] = { amount: 0, qty: 0 };
+                    }
+                    holdingsSummary[h.ticker].amount += currentAsset;
+                    holdingsSummary[h.ticker].qty += h.quantity;
                 });
             });
 
@@ -949,8 +963,6 @@
             
             document.getElementById('dash-prev-div').textContent = formatMoney(prevMonthlyDiv) + '원';
             
-            // v1.60: dash-next-div 업데이트는 하단의 renderDashboardSimulation 함수가 담당하도록 변경 (차트 데이터 동기화)
-
             const LIMIT_20M = 20000000;
             const taxPct = Math.min((annualTaxablePreTax / LIMIT_20M) * 100, 100);
             
@@ -1004,15 +1016,15 @@
                 combinedDonutEl.innerHTML = '<p class="text-sm text-slate-500 w-full text-center py-4 font-medium">데이터가 없습니다.</p>';
                 bottomListEl.innerHTML = '<p class="text-sm text-slate-500 text-center py-6 font-medium">보유 종목이 없습니다.</p>';
             } else {
-                const sortedHoldings = Object.entries(holdingsSummary).sort((a, b) => b[1] - a[1]);
+                const sortedHoldings = Object.entries(holdingsSummary).sort((a, b) => b[1].amount - a[1].amount);
                 let chartData = [];
                 let otherAmount = 0;
                 
                 sortedHoldings.forEach((item, index) => {
                     if (index < 4) { 
-                        chartData.push({ name: getTickerName(item[0]), ticker: item[0], amount: item[1] });
+                        chartData.push({ name: getTickerName(item[0]), ticker: item[0], amount: item[1].amount });
                     } else {
-                        otherAmount += item[1];
+                        otherAmount += item[1].amount;
                     }
                 });
                 if (otherAmount > 0) {
@@ -1056,7 +1068,12 @@
                 `;
                 combinedDonutEl.innerHTML = svgHTML + legendHTML;
 
-                bottomListEl.innerHTML = sortedHoldings.map(([ticker, amount], index) => {
+                bottomListEl.innerHTML = sortedHoldings.map(([ticker, data], index) => {
+                    const amount = data.amount;
+                    const qty = data.qty;
+                    const mData = marketData[ticker] || { div: 0 };
+                    const divPerShare = mData.div;
+
                     const pct = ((amount / totalAsset) * 100).toFixed(1);
                     const initial = getTickerName(ticker).substring(0, 1);
                     const color = index < colors.length ? colors[index] : '#64748b';
@@ -1065,7 +1082,6 @@
                         ? '<span class="text-[8px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1.5 py-[3px] rounded font-bold tracking-widest leading-none whitespace-nowrap shadow-sm">월초</span>'
                         : '<span class="text-[8px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-[3px] rounded font-bold tracking-widest leading-none whitespace-nowrap shadow-sm">월중</span>';
                     
-                    // 종목명 15자 초과 시 11자 남기고 말줄임표 처리 (대시보드 하단 리스트)
                     const fullName = getTickerName(ticker);
                     let nameHtml = `<span class="block">${fullName}</span>`;
                     const spaceIdx = fullName.indexOf(' ');
@@ -1088,7 +1104,7 @@
                             </div>
                             <div class="flex-1 min-w-0 flex flex-col justify-center pr-1">
                                 <div class="font-bold text-white text-xs sm:text-[13px] tracking-tight whitespace-normal break-keep pr-2 leading-snug">${nameHtml}</div>
-                                <p class="text-[10px] text-slate-500 mt-0.5">${ticker}</p>
+                                <p class="text-[10px] text-slate-500 mt-0.5">${ticker} · ${formatMoney(qty)}주 · 주당 배당 ${formatMoney(divPerShare)}원</p>
                             </div>
                             <div class="text-right flex-shrink-0 pl-1">
                                 <p class="font-bold text-white text-sm mb-0.5">${formatMoney(amount)}원</p>
@@ -1394,11 +1410,40 @@
             const getX = (m) => padL + ((m - 1) / 11) * cW;
             const getY = (v) => padT + cH - ((v - minY_line) / rY) * cH;
 
-            const pathP = `M ${lineChartData.map(d => `${getX(d.month)},${getY(d.principal)}`).join(' L ')}`;
-            const trPast = lineChartData.filter(d => d.month <= currentMonth);
-            const trFuture = lineChartData.filter(d => d.month >= currentMonth); 
-            const pathTRPast = `M ${trPast.map(d => `${getX(d.month)},${getY(d.tr)}`).join(' L ')}`;
-            const pathTRFuture = `M ${trFuture.map(d => `${getX(d.month)},${getY(d.tr)}`).join(' L ')}`;
+            const principalPoints = lineChartData.map(d => ({ x: getX(d.month), y: getY(d.principal) }));
+            const trAllPoints = lineChartData.map(d => ({ x: getX(d.month), y: getY(d.tr) }));
+            const trPastPoints = lineChartData.filter(d => d.month <= currentMonth).map(d => ({ x: getX(d.month), y: getY(d.tr) }));
+            const trFuturePoints = lineChartData.filter(d => d.month >= currentMonth).map(d => ({ x: getX(d.month), y: getY(d.tr) }));
+
+            const pathP = createSmoothPath(principalPoints);
+            const pathTRAll = createSmoothPath(trAllPoints);
+            const pathTRPast = createSmoothPath(trPastPoints);
+            const pathTRFuture = createSmoothPath(trFuturePoints);
+
+            const pathTRFillGreen = pathTRAll + ` L ${getX(12)},${h_svg+100} L ${getX(1)},${h_svg+100} Z`;
+            const pathTRFillRed = pathTRAll + ` L ${getX(12)},-100 L ${getX(1)},-100 Z`;
+
+            const clipAbovePath = pathP + ` L ${getX(12)},-100 L ${getX(1)},-100 Z`;
+            const clipBelowPath = pathP + ` L ${getX(12)},${h_svg+100} L ${getX(1)},${h_svg+100} Z`;
+
+            let defsHtml = `
+                <defs>
+                    <linearGradient id="grad-green" x1="0" y1="0" x2="0" y2="${h_svg}" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#10b981" stop-opacity="0.3" />
+                        <stop offset="100%" stop-color="#10b981" stop-opacity="0.0" />
+                    </linearGradient>
+                    <linearGradient id="grad-red" x1="0" y1="${h_svg}" x2="0" y2="0" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#ef4444" stop-opacity="0.3" />
+                        <stop offset="100%" stop-color="#ef4444" stop-opacity="0.0" />
+                    </linearGradient>
+                    <clipPath id="clip-above">
+                        <path d="${clipAbovePath}" />
+                    </clipPath>
+                    <clipPath id="clip-below">
+                        <path d="${clipBelowPath}" />
+                    </clipPath>
+                </defs>
+            `;
 
             let overlayHtml = '';
             const curD = lineChartData.find(d => d.month === currentMonth);
@@ -1408,6 +1453,9 @@
             if (curD) {
                 const px = (getX(currentMonth) / w) * 100;
                 const py = (getY(curD.tr) / h_svg) * 100;
+                const isUp = curD.tr >= curD.principal;
+                const borderColor = isUp ? 'border-[#10b981]' : 'border-[#ef4444]';
+                const textColor = isUp ? 'text-emerald-400' : 'text-red-400';
                 
                 let textStyle = `left: ${px}%; top: ${py}%; width: 100px; margin-left: -50px; margin-top: -24px; text-align: center;`;
                 if (currentMonth === 1) {
@@ -1417,16 +1465,20 @@
                 }
 
                 overlayHtml += `
-                    <div class="absolute w-3.5 h-3.5 bg-[#1e293b] border-[2.5px] border-[#10b981] rounded-full z-10" style="left: ${px}%; top: ${py}%; margin-left: -7px; margin-top: -7px;"></div>
-                    <div class="absolute text-emerald-400 font-bold text-[11px] sm:text-xs z-10 whitespace-nowrap" style="${textStyle}">${fmtLine(curD.tr)}</div>
+                    <div class="absolute w-3.5 h-3.5 bg-[#1e293b] border-[2.5px] ${borderColor} rounded-full z-10" style="left: ${px}%; top: ${py}%; margin-left: -7px; margin-top: -7px;"></div>
+                    <div class="absolute ${textColor} font-bold text-[11px] sm:text-xs z-10 whitespace-nowrap" style="${textStyle}">${fmtLine(curD.tr)}</div>
                 `;
             }
             if (currentMonth < 12 && decD) {
                 const px = (getX(12) / w) * 100;
                 const py = (getY(decD.tr) / h_svg) * 100;
+                const isUp = decD.tr >= decD.principal;
+                const borderColor = isUp ? 'border-[#34d399]' : 'border-[#f87171]';
+                const textColor = isUp ? 'text-emerald-400' : 'text-red-400';
+                
                 overlayHtml += `
-                    <div class="absolute w-3.5 h-3.5 bg-[#1e293b] border-[2.5px] border-[#34d399] rounded-full z-10" style="left: ${px}%; top: ${py}%; margin-left: -7px; margin-top: -7px;"></div>
-                    <div class="absolute text-emerald-400 font-bold text-[11px] sm:text-xs z-10 whitespace-nowrap" style="left: ${px}%; top: ${py}%; width: 100px; margin-left: -95px; margin-top: -24px; text-align: right;">${fmtLine(decD.tr)}</div>
+                    <div class="absolute w-3.5 h-3.5 bg-[#1e293b] border-[2.5px] ${borderColor} rounded-full z-10" style="left: ${px}%; top: ${py}%; margin-left: -7px; margin-top: -7px;"></div>
+                    <div class="absolute ${textColor} font-bold text-[11px] sm:text-xs z-10 whitespace-nowrap" style="left: ${px}%; top: ${py}%; width: 100px; margin-left: -95px; margin-top: -24px; text-align: right;">${fmtLine(decD.tr)}</div>
                 `;
             }
 
@@ -1439,9 +1491,22 @@
             const svgLineHTML = `
                 <div class="relative w-full" style="padding-top: 38%;">
                     <svg viewBox="0 0 ${w} ${h_svg}" class="absolute top-0 left-0 w-full h-full overflow-visible drop-shadow-lg">
-                        <path d="${pathP}" fill="none" stroke="#64748b" stroke-width="5" stroke-dasharray="15,10" opacity="0.6" />
-                        <path d="${pathTRPast}" fill="none" stroke="#10b981" stroke-width="8" stroke-linecap="round" />
-                        <path d="${pathTRFuture}" fill="none" stroke="#34d399" stroke-width="8" stroke-dasharray="15,15" stroke-linecap="round" />
+                        ${defsHtml}
+                        
+                        <!-- Fill Areas (Clipping) -->
+                        <path d="${pathTRFillGreen}" fill="url(#grad-green)" clip-path="url(#clip-above)" />
+                        <path d="${pathTRFillRed}" fill="url(#grad-red)" clip-path="url(#clip-below)" />
+
+                        <!-- Principal Line -->
+                        <path d="${pathP}" fill="none" stroke="#64748b" stroke-width="4" stroke-dasharray="8,8" opacity="0.6" />
+
+                        <!-- Past TR Line (Solid) -->
+                        <path d="${pathTRPast}" fill="none" stroke="#10b981" stroke-width="6" stroke-linecap="round" clip-path="url(#clip-above)" />
+                        <path d="${pathTRPast}" fill="none" stroke="#ef4444" stroke-width="6" stroke-linecap="round" clip-path="url(#clip-below)" />
+
+                        <!-- Future TR Line (Dashed) -->
+                        <path d="${pathTRFuture}" fill="none" stroke="#34d399" stroke-width="6" stroke-dasharray="12,12" stroke-linecap="round" clip-path="url(#clip-above)" />
+                        <path d="${pathTRFuture}" fill="none" stroke="#f87171" stroke-width="6" stroke-dasharray="12,12" stroke-linecap="round" clip-path="url(#clip-below)" />
                     </svg>
                     <div class="absolute inset-0 w-full h-full pointer-events-none">
                         ${overlayHtml}
@@ -1452,12 +1517,10 @@
                     <div class="flex items-center gap-1.5 text-slate-400">
                         <div class="w-4 h-0.5 border-t-2 border-dashed border-slate-500"></div> 투자 원금
                     </div>
-                    <div class="flex items-center gap-1.5 text-emerald-400">
-                        <div class="flex items-center">
-                            <div class="w-2.5 h-1.5 bg-emerald-500 rounded-sm"></div>
-                            <div class="w-2.5 h-0 border-t-2 border-dashed border-emerald-400 ml-0.5"></div>
-                        </div>
-                        자산 예측 (TR)
+                    <div class="flex items-center gap-1.5 text-slate-300">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] relative z-10"></span>
+                        <span class="w-2 h-2 rounded-full bg-red-500 -ml-2 shadow-[0_0_8px_rgba(239,68,68,0.5)]"></span>
+                        <span class="ml-0.5">자산 예측 (TR)</span>
                     </div>
                 </div>
             `;
@@ -1470,30 +1533,42 @@
             
             let divSummaryHtml = '';
             if (annualWithDrip > annualWithoutDrip) {
-                divSummaryHtml = `올해 총 배당금 예상: <span class="text-slate-400 mr-1">${formatMoney(annualWithoutDrip)}원</span> <i class="fas fa-arrow-right text-[9px] mx-1 text-slate-500"></i> <strong class="text-white">${formatMoney(annualWithDrip)}원</strong> <span class="text-[9px] text-emerald-400 font-bold ml-1">DCA+DRIP</span>`;
+                divSummaryHtml = `
+                    <span class="block text-[11px] text-slate-400 mb-0.5">올해 총 배당금 예상</span>
+                    <span class="block text-[13px]"><span class="text-slate-300 mr-1">${formatMoney(annualWithoutDrip)}원</span> <i class="fas fa-arrow-right text-[10px] mx-1 text-slate-500"></i> <strong class="text-white">${formatMoney(annualWithDrip)}원</strong> <span class="text-[9px] text-emerald-400 font-bold ml-1 tracking-wide">DCA+DRIP</span></span>
+                `;
             } else {
-                divSummaryHtml = `올해 총 배당금 예상: <strong class="text-white">${formatMoney(annualWithoutDrip)}원</strong>`;
+                divSummaryHtml = `
+                    <span class="block text-[11px] text-slate-400 mb-0.5">올해 총 배당금 예상</span>
+                    <span class="block text-[13px]"><strong class="text-white">${formatMoney(annualWithoutDrip)}원</strong></span>
+                `;
             }
+
+            const trSummaryHtml = `
+                <span class="block text-[11px] text-slate-400 mb-0.5">연말 최종 자산(TR) 예측</span>
+                <span class="block text-[13px]"><span class="text-slate-300 mr-1">${formatMoney(baseAsset)}원</span> <i class="fas fa-arrow-right text-[10px] mx-1 text-slate-500"></i> <strong class="text-emerald-400">${formatMoney(finalAsset)}원</strong></span>
+            `;
 
             const predictedTRRate = finalPrincipal > 0 ? ((finalAsset - finalPrincipal) / finalPrincipal) * 100 : 0;
             const trRateSign = predictedTRRate > 0 ? '+' : '';
             const trRateColor = predictedTRRate > 0 ? 'text-up' : (predictedTRRate < 0 ? 'text-down' : 'text-slate-400');
             
-            document.getElementById('dash-sim-summary').innerHTML = `
-                <li class="flex items-start gap-2.5"><div class="w-1.5 h-1.5 rounded-full bg-brand mt-1.5 flex-shrink-0"></div> <div class="flex-1 leading-relaxed">${divSummaryHtml}</div></li>
-                <li class="flex items-start gap-2.5"><div class="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 flex-shrink-0"></div> <div class="flex-1 leading-relaxed">연말 최종 자산(TR) 예측: <strong class="text-white">${formatMoney(baseAsset)}원</strong> <i class="fas fa-arrow-right text-[9px] mx-1 text-slate-500"></i> <strong class="text-emerald-400">${formatMoney(finalAsset)}원</strong></div></li>
-                <li class="flex items-start gap-2.5"><div class="w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.6)] mt-1.5 flex-shrink-0"></div> <div class="flex-1 leading-relaxed">예상 총 투자 원금: <span class="text-slate-300 font-medium mr-2">${formatMoney(finalPrincipal)}원</span> <i class="fas fa-caret-right text-slate-500 text-[10px] mx-1"></i> TR: <strong class="${trRateColor}">${trRateSign}${predictedTRRate.toFixed(2)}%</strong></div></li>
+            const principalSummaryHtml = `
+                <span class="block text-[11px] text-slate-400 mb-0.5">예상 총 투자 원금 <span class="text-white font-medium ml-1">${formatMoney(finalPrincipal)}원</span></span>
+                <span class="block text-[13px] text-slate-300">예상 통합 수익률(TR) <i class="fas fa-caret-right text-slate-500 text-[10px] mx-1"></i> <strong class="${trRateColor}">${trRateSign}${predictedTRRate.toFixed(2)}%</strong></span>
             `;
 
-            // v1.60: 시뮬레이션 데이터를 기반으로 대시보드 상단 '익월 예상' 값 업데이트 반영
+            document.getElementById('dash-sim-summary').innerHTML = `
+                <li class="flex items-start gap-3"><div class="w-1.5 h-1.5 rounded-full bg-brand mt-1.5 flex-shrink-0"></div> <div class="flex-1 leading-snug">${divSummaryHtml}</div></li>
+                <li class="flex items-start gap-3"><div class="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 flex-shrink-0"></div> <div class="flex-1 leading-snug">${trSummaryHtml}</div></li>
+                <li class="flex items-start gap-3"><div class="w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.6)] mt-1.5 flex-shrink-0"></div> <div class="flex-1 leading-snug">${principalSummaryHtml}</div></li>
+            `;
+
             if (history.length > 0) {
                 let displayNextDiv = 0;
-                // currentMonth는 1-based (예: 3월이면 3), history 배열은 0-based (0이 1월, 2가 3월).
-                // 즉 history[currentMonth]가 익월(예: 3이면 4월(인덱스3)) 데이터임.
                 if (currentMonth < 12 && history[currentMonth]) {
                     displayNextDiv = history[currentMonth].total;
                 } else if (history[11]) {
-                    // 12월일 경우 시뮬레이션은 당해년도까지만 있으므로 12월 값을 근사치로 대체
                     displayNextDiv = history[11].total;
                 }
                 document.getElementById('dash-next-div').textContent = formatMoney(displayNextDiv) + '원';
@@ -1584,7 +1659,6 @@
                         let actionBtn = '';
 
                         if (isExDateThisMonth && !isActual) {
-                            // State A: 이번달 배당락 감지 완료 + 실제 배당금 아직 미입력 -> 알림 배너 표시 (네온 효과)
                             noticeBanner = `
                                 <div class="mt-3 bg-gradient-to-r from-brand/20 to-blue-900/40 border border-brand/80 shadow-[0_0_15px_rgba(59,130,246,0.6)] rounded-xl p-2.5 flex items-center justify-between animate-pulse cursor-pointer" onclick="event.stopPropagation(); openEditHoldingModal('${acc.id}', '${h.id}')">
                                     <span class="text-[11px] sm:text-xs font-bold text-white flex items-center gap-2">
@@ -1593,21 +1667,17 @@
                                     <span class="text-[10px] bg-brand text-white px-2 py-1 rounded shadow cursor-pointer hover:bg-brandHover transition-colors flex-shrink-0 ml-2">입력하기</span>
                                 </div>
                             `;
-                            // 버튼은 기본 상태 유지
                             actionBtn = `<button onclick="event.stopPropagation(); openQuickAddModal('${acc.id}', '${h.id}', false)" class="bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold transition-all flex items-center gap-1.5 shadow-sm whitespace-nowrap active:scale-95"><i class="fas fa-cart-plus"></i> 추가 매수</button>`;
                         } else if (isExDateThisMonth && isActual && !isDripDone && hasTarget) {
-                            // State B: 실제 배당금 입력 완료 + 재투자 대상 설정됨 + 재투자 아직 안함 -> "추가 매수" 버튼이 하이라이트됨
                             actionBtn = `
                                 <button onclick="event.stopPropagation(); openQuickAddModal('${acc.id}', '${h.id}', true)" class="bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-white px-3 sm:px-4 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-extrabold transition-all flex items-center gap-1.5 shadow-[0_0_15px_rgba(16,185,129,0.8)] whitespace-nowrap animate-pulse border border-emerald-300">
                                     <i class="fas fa-sync-alt animate-[spin_3s_linear_infinite]"></i> 추가 매수 (재투자)
                                 </button>
                             `;
                         } else {
-                            // 일반적인 평소 상태
                             actionBtn = `<button onclick="event.stopPropagation(); openQuickAddModal('${acc.id}', '${h.id}', false)" class="bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold transition-all flex items-center gap-1.5 shadow-sm whitespace-nowrap active:scale-95"><i class="fas fa-cart-plus"></i> 추가 매수</button>`;
                         }
 
-                        // v1.50 스타일 레이아웃 (한줄 요약 및 우측 버튼)
                         const singleLineStats = `
                             ${noticeBanner}
                             <div class="mt-3.5 flex items-center justify-between bg-slate-800/40 rounded-[14px] p-2 sm:p-2.5 border border-slate-700/50 w-full shadow-inner">
@@ -1633,7 +1703,6 @@
                             ? `<span class="text-[8px] bg-purple-500/20 text-purple-400 border border-purple-500/30 px-1.5 py-[3px] rounded font-bold tracking-tighter leading-none whitespace-nowrap shadow-sm">DCA ${formatMoney(h.dcaAmount / 10000)}만</span>`
                             : '';
 
-                        // v1.58: 종목명 15자 초과 시 11자 남기고 말줄임표 처리 (포트폴리오 리스트)
                         const fullName = getTickerName(h.ticker);
                         let nameHtml = `<span class="block">${fullName}</span>`;
                         const spaceIdx = fullName.indexOf(' ');
@@ -1646,16 +1715,17 @@
                             nameHtml = `<span class="block text-slate-400 font-medium text-[11px] sm:text-xs mb-[2px] leading-none tracking-wider">${brandName}</span><span class="block break-keep whitespace-normal">${restName}</span>`;
                         }
 
+                        const divPerShare = mData.div;
+
                         return `
                             <div class="cursor-pointer group py-3" onclick="openEditHoldingModal('${acc.id}', '${h.id}')">
                                 <div class="flex items-start w-full">
                                     <div class="flex-1 min-w-0 flex flex-col w-full">
                                         
-                                        <!-- 종목명 및 총액 -->
                                         <div class="flex justify-between items-start gap-2 w-full px-1">
                                             <div class="flex-1 min-w-0">
                                                 <div class="font-bold text-white text-[13px] sm:text-[14px] leading-snug group-hover:text-brand transition-colors whitespace-normal break-keep pr-2">${nameHtml}</div>
-                                                <p class="text-[10px] text-slate-500 mt-1.5">${h.ticker} · ${formatMoney(h.quantity)}주 · 평단 ${formatMoney(h.avgPrice)}</p>
+                                                <p class="text-[10px] text-slate-500 mt-1.5">${h.ticker} · ${formatMoney(h.quantity)}주 · 평단 ${formatMoney(h.avgPrice)} · 주당 배당 ${formatMoney(divPerShare)}원</p>
                                             </div>
                                             <div class="text-right flex-shrink-0 pt-0.5 flex flex-col items-end gap-1.5">
                                                 <p class="font-bold text-white text-[14px] sm:text-[15px] tracking-tight">${formatMoney(asset)}원</p>
@@ -1666,7 +1736,6 @@
                                             </div>
                                         </div>
 
-                                        <!-- 새로운 통계 한 줄 및 모달 팝업 버튼 -->
                                         ${singleLineStats}
                                     </div>
                                 </div>
@@ -1876,7 +1945,6 @@
             document.getElementById('modal-add-holding').classList.remove('hidden');
         }
 
-        // v1.60: 스마트 추가 매수 모달 (타겟 종목명 분리/강조하여 오해 방지 개선)
         function openQuickAddModal(accId, holdingId, isDrip = false) {
             const acc = userData.accounts.find(a => a.id === accId);
             const sourceH = acc.holdings.find(h => h.id === holdingId);
@@ -1893,7 +1961,6 @@
             const titleEl = document.getElementById('quick-add-title');
             const infoTextEl = document.getElementById('quick-info-text');
 
-            // 기본은 본인 종목을 띄움. 단, 재투자(DRIP) 활성화 상태라면 '타겟' 종목으로 대상 자동 전환
             let targetTicker = sourceH.ticker;
             if (isDrip && sourceH.targetTicker) {
                 targetTicker = sourceH.targetTicker;
@@ -1903,7 +1970,6 @@
             document.getElementById('quick-ticker-display').value = `${displayTickerName} (${targetTicker})`;
 
             if (isDrip) {
-                // 재투자(DRIP) 매수 가이드 활성화
                 titleEl.innerHTML = `<i class="fas fa-sync-alt text-emerald-400"></i> 배당 재투자 매수`;
                 infoTextEl.innerHTML = `<i class="fas fa-info-circle mr-1"></i>입력하시면 타겟 종목에 수량이 병합(매수)되며 재투자 사이클이 완료됩니다.`;
 
@@ -1916,7 +1982,6 @@
                     canBuyQty = Math.floor(actualCurrentDiv / targetData.price);
                 }
                 
-                // 타겟 종목을 매수해야함을 명확하게 보여주는 UI 개선
                 let tNameHtml = `<span class="block truncate">${getTickerName(targetTicker)}</span>`;
                 if (getTickerName(targetTicker).indexOf(' ') !== -1) {
                     const sIdx = getTickerName(targetTicker).indexOf(' ');
@@ -1928,7 +1993,6 @@
                     tNameHtml = `<span class="block text-emerald-500 font-medium text-[9px] sm:text-[10px] mb-[1px] leading-none tracking-wider">${brandName}</span><span class="block truncate">${restName}</span>`;
                 }
 
-                // 본 종목(출발지) 이름 축약
                 let sourceShortName = getTickerName(sourceH.ticker);
                 if(sourceShortName.length > 10) sourceShortName = sourceShortName.substring(0, 10) + '...';
 
@@ -1953,7 +2017,6 @@
                 `;
                 targetContainer.style.display = 'block';
             } else {
-                // 평소 추가 매수 상태 (가이드 숨김)
                 titleEl.innerHTML = `<i class="fas fa-cart-plus text-brand"></i> 추가 매수`;
                 infoTextEl.innerHTML = `<i class="fas fa-info-circle mr-1"></i>입력하신 내용은 기존 평단가 및 수량에 병합(물타기/불타기)되어 자동 계산됩니다.`;
                 targetContainer.innerHTML = '';
@@ -1963,7 +2026,6 @@
             document.getElementById('modal-quick-add').classList.remove('hidden');
         }
 
-        // 빠른 추가 매수 반영 로직
         function submitQuickAdd() {
             const accId = document.getElementById('quick-acc-id').value;
             const sourceHId = document.getElementById('quick-source-id').value;
@@ -1986,11 +2048,9 @@
                 targetTicker = sourceH.targetTicker;
             }
 
-            // 계좌 내에서 매수할 종목을 찾거나 새로 생성
             let targetH = acc.holdings.find(h => h.ticker === targetTicker);
 
             if (targetH) {
-                // 기존 종목 병합(물타기/불타기)
                 const currentTotalCost = targetH.quantity * targetH.avgPrice;
                 const additionalCost = addQty * addPrice;
                 const newTotalQty = targetH.quantity + addQty;
@@ -1999,7 +2059,6 @@
                 targetH.quantity = newTotalQty;
                 targetH.avgPrice = newAvgPrice;
             } else {
-                // 포트폴리오에 없는 새로운 종목인 경우 신규 생성
                 targetH = {
                     id: 'hold_' + Date.now(),
                     ticker: targetTicker,
@@ -2013,7 +2072,6 @@
                 acc.holdings.push(targetH);
             }
 
-            // 재투자 모드였다면, 원본 종목의 상태(dripStatus)를 '완료'로 변경하여 로직을 종료시킴
             if (isDrip) {
                 const currentMonth = new Date().getMonth() + 1;
                 if (!sourceH.dripStatus) sourceH.dripStatus = {};
