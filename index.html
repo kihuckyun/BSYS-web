@@ -162,7 +162,7 @@
         </div>
         <div class="flex items-center gap-1 sm:gap-2">
             <div class="text-[10px] font-bold text-brand bg-brand/10 px-2 py-1 rounded-lg border border-brand/20 shadow-sm tracking-wide hidden sm:block mr-1">
-                by 에이미 v1.67
+                by 에이미 v1.68
             </div>
             <button onclick="openSettingsModal()" class="w-8 h-8 rounded-full bg-cardBg flex items-center justify-center text-slate-400 hover:text-white hover:bg-cardBgLight transition-colors shadow-sm" title="글씨 크기 설정">
                 <span class="font-bold font-serif text-[11px]">Aa</span>
@@ -549,7 +549,7 @@
     <div id="modal-manual-update" class="fixed inset-0 z-[70] hidden bg-bgMain/90 backdrop-blur-sm flex items-center justify-center px-4">
         <div class="bg-cardBg rounded-[28px] w-full max-w-sm p-6 sm:p-7 border border-slate-700 shadow-2xl mx-auto">
             <h3 class="text-xl font-bold mb-2 text-white text-center">API 수동 업데이트</h3>
-            <p class="text-[11px] text-slate-400 mb-6 text-center API 데이터가 누락된 종목 정보를 백엔드로 전송</p>
+            <p class="text-[11px] text-slate-400 mb-6 text-center">API 데이터가 누락된 종목 정보를 백엔드로 전송</p>
             <div class="space-y-4 mb-8">
                 <div>
                     <label class="block text-[11px] text-slate-400 mb-1.5 font-medium ml-1">업데이트할 종목 선택</label>
@@ -1069,11 +1069,12 @@
                 `;
                 combinedDonutEl.innerHTML = svgHTML + legendHTML;
 
+                // v1.68 버그 픽스: 대시보드는 acc, h의 정보를 모르는 상태로 전체 계좌의 티커를 합산한 데이터입니다.
+                // 그러므로 수정(onclick) 기능을 삭제하고 레이아웃만 보여줍니다.
                 bottomListEl.innerHTML = sortedHoldings.map(([ticker, data], index) => {
                     const amount = data.amount;
                     const qty = data.qty;
                     const mData = marketData[ticker] || { div: 0 };
-                    const divPerShare = mData.div;
 
                     const pct = ((amount / totalAsset) * 100).toFixed(1);
                     const initial = getTickerName(ticker).substring(0, 1);
@@ -1095,25 +1096,30 @@
                         nameHtml = `<span class="block text-slate-400 font-medium text-[10px] sm:text-[11px] mb-[2px] leading-none tracking-wider">${brandName}</span><span class="block break-keep whitespace-normal">${restName}</span>`;
                     }
 
+                    // v1.68 평단가 제거 후 배당금 추가 (대시보드 하단)
                     return `
-                        <div class="flex items-center justify-between p-3 rounded-2xl hover:bg-slate-800 transition-colors cursor-default gap-3">
-                            <div class="flex flex-col items-center gap-1.5 flex-shrink-0 w-10">
-                                <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold border shadow-sm" style="border-color: ${color}40; background-color: ${color}20; color: ${color}">
-                                    ${initial}
+                        <div class="py-3">
+                            <div class="flex items-start w-full">
+                                <div class="flex-1 min-w-0 flex flex-col w-full">
+                                    
+                                    <div class="flex justify-between items-start gap-2 w-full px-1">
+                                        <div class="flex-1 min-w-0">
+                                            <div class="font-bold text-white text-[13px] sm:text-[14px] leading-snug whitespace-normal break-keep pr-2">${nameHtml}</div>
+                                            <p class="text-[10px] text-slate-500 mt-1.5">${ticker} · ${formatMoney(qty)}주 · 배당 ${formatMoney(mData.div)}원</p>
+                                        </div>
+                                        <div class="text-right flex-shrink-0 pt-0.5 flex flex-col items-end gap-1.5">
+                                            <p class="font-bold text-white text-[14px] sm:text-[15px] tracking-tight">${formatMoney(amount)}원</p>
+                                            <div class="flex items-center gap-1 justify-end">
+                                                ${scheduleBadge}
+                                            </div>
+                                        </div>
+                                    </div>
+
                                 </div>
-                                ${scheduleBadge}
-                            </div>
-                            <div class="flex-1 min-w-0 flex flex-col justify-center pr-1">
-                                <div class="font-bold text-white text-xs sm:text-[13px] tracking-tight whitespace-normal break-keep pr-2 leading-snug">${nameHtml}</div>
-                                <p class="text-[10px] text-slate-500 mt-0.5">${ticker} · ${formatMoney(qty)}주 · 배당 ${formatMoney(divPerShare)}원</p>
-                            </div>
-                            <div class="text-right flex-shrink-0 pl-1">
-                                <p class="font-bold text-white text-sm mb-0.5">${formatMoney(amount)}원</p>
-                                <p class="text-[11px] font-bold" style="color: ${color}">${pct}%</p>
                             </div>
                         </div>
                     `;
-                }).join('');
+                }).join('<div class="h-px w-full bg-slate-800/60 my-1"></div>');
             }
 
             renderDashboardSimulation(mBasePrincipal, mBaseAsset, annualTotalPostTax);
@@ -1554,9 +1560,10 @@
             const trRateSign = predictedTRRate > 0 ? '+' : '';
             const trRateColor = predictedTRRate > 0 ? 'text-up' : (predictedTRRate < 0 ? 'text-down' : 'text-slate-400');
             
+            // v1.68: 예상 총 투자 원금 텍스트 정렬을 위의 두 항목과 완벽하게 동일한 2줄 포맷으로 수정
             const principalSummaryHtml = `
-                <span class="block text-[11px] text-slate-400 mb-0.5">예상 총 투자 원금 <span class="text-white font-medium ml-1">${formatMoney(finalPrincipal)}원</span></span>
-                <span class="block text-[13px] text-slate-300">예상 통합 수익률(TR) <i class="fas fa-caret-right text-slate-500 text-[10px] mx-1"></i> <strong class="${trRateColor}">${trRateSign}${predictedTRRate.toFixed(2)}%</strong></span>
+                <span class="block text-[11px] text-slate-400 mb-0.5">예상 총 투자 원금</span>
+                <span class="block text-[13px]"><span class="text-slate-300 mr-1">${formatMoney(finalPrincipal)}원</span> <i class="fas fa-caret-right text-slate-500 text-[10px] mx-1"></i> <span class="text-slate-300">TR: <strong class="${trRateColor}">${trRateSign}${predictedTRRate.toFixed(2)}%</strong></span></span>
             `;
 
             document.getElementById('dash-sim-summary').innerHTML = `
@@ -1715,8 +1722,7 @@
                             nameHtml = `<span class="block text-slate-400 font-medium text-[11px] sm:text-xs mb-[2px] leading-none tracking-wider">${brandName}</span><span class="block break-keep whitespace-normal">${restName}</span>`;
                         }
 
-                        const divPerShare = mData.div;
-
+                        // v1.68 평단가 제거 후 배당금 추가 (포트폴리오 리스트)
                         return `
                             <div class="cursor-pointer group py-3" onclick="openEditHoldingModal('${acc.id}', '${h.id}')">
                                 <div class="flex items-start w-full">
@@ -1725,7 +1731,7 @@
                                         <div class="flex justify-between items-start gap-2 w-full px-1">
                                             <div class="flex-1 min-w-0">
                                                 <div class="font-bold text-white text-[13px] sm:text-[14px] leading-snug group-hover:text-brand transition-colors whitespace-normal break-keep pr-2">${nameHtml}</div>
-                                                <p class="text-[10px] text-slate-500 mt-1.5">${h.ticker} · ${formatMoney(h.quantity)}주 · 배당 ${formatMoney(divPerShare)}원</p>
+                                                <p class="text-[10px] text-slate-500 mt-1.5">${h.ticker} · ${formatMoney(h.quantity)}주 · 배당 ${formatMoney(mData.div)}원</p>
                                             </div>
                                             <div class="text-right flex-shrink-0 pt-0.5 flex flex-col items-end gap-1.5">
                                                 <p class="font-bold text-white text-[14px] sm:text-[15px] tracking-tight">${formatMoney(asset)}원</p>
@@ -1966,6 +1972,12 @@
                 targetTicker = sourceH.targetTicker;
             }
 
+            const targetData = marketData[targetTicker] || { price: 0, div: 0 };
+            const currentPrice = targetData.price > 0 ? targetData.price : '';
+            
+            document.getElementById('quick-add-price').value = currentPrice;
+            document.getElementById('quick-add-qty').value = '';
+
             const displayTickerName = getTickerName(targetTicker);
             document.getElementById('quick-ticker-display').value = `${displayTickerName} (${targetTicker})`;
 
@@ -1976,10 +1988,10 @@
                 const currentMonth = new Date().getMonth() + 1;
                 const actualCurrentDiv = sourceH.monthlyDividends && sourceH.monthlyDividends[currentMonth] ? sourceH.monthlyDividends[currentMonth].amount : 0;
 
-                const targetData = marketData[targetTicker];
                 let canBuyQty = 0;
                 if (targetData && targetData.price > 0) {
                     canBuyQty = Math.floor(actualCurrentDiv / targetData.price);
+                    document.getElementById('quick-add-qty').value = canBuyQty > 0 ? canBuyQty : '';
                 }
                 
                 let tNameHtml = `<span class="block truncate">${getTickerName(targetTicker)}</span>`;
@@ -2021,6 +2033,8 @@
                 infoTextEl.innerHTML = `<i class="fas fa-info-circle mr-1"></i>입력하신 내용은 기존 평단가 및 수량에 병합(물타기/불타기)되어 자동 계산됩니다.`;
                 targetContainer.innerHTML = '';
                 targetContainer.style.display = 'none';
+                
+                document.getElementById('quick-add-qty').value = '';
             }
 
             document.getElementById('modal-quick-add').classList.remove('hidden');
