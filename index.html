@@ -248,12 +248,16 @@
                     </div>
                     <div class="flex gap-4 sm:gap-5 pt-3 border-t border-slate-700/50">
                         <div>
-                            <p class="text-[10px] text-slate-500 mb-1">순수 평가 손익 (등락)</p>
+                            <p class="text-[10px] text-slate-500 mb-1">순수 평가 손익</p>
                             <p class="text-xs font-bold text-slate-400" id="dash-capital-pnl">0.00%</p>
                         </div>
                         <div>
-                            <p class="text-[10px] text-slate-500 mb-1 flex items-center gap-1"><i class="fas fa-coins text-yellow-500/80"></i> 누적 배당 수익률</p>
+                            <p class="text-[10px] text-slate-500 mb-1 flex items-center gap-1"><i class="fas fa-coins text-yellow-500/80"></i> 누적 배당</p>
                             <p class="text-xs font-bold text-brand" id="dash-dividend-pnl">+0.00%</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] text-slate-500 mb-1 flex items-center gap-1"><i class="fas fa-percent text-emerald-500/80"></i> 시가 배당률</p>
+                            <p class="text-xs font-bold text-emerald-400" id="dash-current-yield">0.00%</p>
                         </div>
                     </div>
                 </div>
@@ -862,6 +866,8 @@
             let nextMonthAddedDiv = 0;
             let holdingsSummary = {};
 
+            let totalAnnualExpectedDivPreTax = 0;
+
             let annualTotalPostTax = 0;
             let annualTaxablePreTax = 0;
             let annualTaxFree = 0;
@@ -900,6 +906,8 @@
                     const accDivReceived = baseDiv + monthlySum;
 
                     const expectedPreTax = h.quantity * mData.div;
+                    totalAnnualExpectedDivPreTax += expectedPreTax;
+
                     for(let m=1; m<=12; m++) {
                         const manualInput = h.monthlyDividends && h.monthlyDividends[m] ? h.monthlyDividends[m].amount : null;
                         let postTaxDiv = 0;
@@ -1008,6 +1016,14 @@
                 capPnlEl.textContent = "0.00%";
                 capPnlEl.className = "text-xs font-bold text-slate-400";
                 divPnlEl.textContent = "+0.00%";
+            }
+
+            const yieldEl = document.getElementById('dash-current-yield');
+            if (totalAsset > 0) {
+                const currentYield = (totalAnnualExpectedDivPreTax / totalAsset) * 100;
+                yieldEl.textContent = `${currentYield.toFixed(2)}%`;
+            } else {
+                yieldEl.textContent = "0.00%";
             }
 
             const combinedDonutEl = document.getElementById('dash-combined-donut');
@@ -1367,7 +1383,7 @@
                 }
 
                 let tooltipHtml = `
-                    <div class="absolute -top-14 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 bg-cardBg p-2 rounded-lg text-white z-30 shadow-[0_4px_20px_rgba(0,0,0,0.5)] border border-slate-600 pointer-events-none flex flex-col gap-1 text-[9px] whitespace-nowrap transition-opacity">
+                    <div class="absolute -top-14 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 group-focus:opacity-100 bg-cardBg p-2 rounded-lg text-white z-30 shadow-[0_4px_20px_rgba(0,0,0,0.5)] border border-slate-600 pointer-events-none flex flex-col gap-1 text-[9px] whitespace-nowrap transition-opacity">
                         <div class="font-extrabold border-b border-slate-600 pb-1 mb-0.5 text-[10px]">총액: ${formatMoney(div)}원</div>
                         ${divData.dca > 0 ? `<div class="text-purple-300 flex justify-between gap-4 font-medium"><span>DCA 추가:</span> <span>+${formatMoney(divData.dca)}</span></div>` : ''}
                         ${divData.drip > 0 ? `<div class="text-teal-300 flex justify-between gap-4 font-medium"><span>DRIP 추가:</span> <span>+${formatMoney(divData.drip)}</span></div>` : ''}
@@ -1376,10 +1392,10 @@
                 `;
 
                 chartHTML += `
-                    <div class="flex flex-col items-center justify-end flex-1 h-full relative group min-w-0 px-[1px]">
+                    <div class="flex flex-col items-center justify-end flex-1 h-full relative group min-w-0 px-[1px] cursor-pointer outline-none" tabindex="0" onclick="this.focus()">
                         <span class="chart-label text-[7px] sm:text-[8px] mb-1.5 ${valColor} whitespace-nowrap z-10 text-center w-full block overflow-visible tracking-tighter">${shortVal}</span>
                         
-                        <div class="w-full flex flex-col justify-start rounded-t-[3px] overflow-hidden relative hover:opacity-80 transition-opacity cursor-pointer shadow-sm ${isCurrent ? 'shadow-[0_0_12px_rgba(234,179,8,0.4)]' : ''}" style="height: ${h}%">
+                        <div class="w-full flex flex-col justify-start rounded-t-[3px] overflow-hidden relative hover:opacity-80 transition-opacity shadow-sm ${isCurrent ? 'shadow-[0_0_12px_rgba(234,179,8,0.4)]' : ''}" style="height: ${h}%">
                             ${innerHtml}
                         </div>
                         
