@@ -906,7 +906,7 @@
                     const accDivReceived = baseDiv + monthlySum;
 
                     const expectedPreTax = h.quantity * mData.div;
-                    totalAnnualExpectedDivPreTax += expectedPreTax;
+                    totalAnnualExpectedDivPreTax += (expectedPreTax * 12); // 1개월치 배당을 12개월로 연환산 적용하여 합산
 
                     for(let m=1; m<=12; m++) {
                         const manualInput = h.monthlyDividends && h.monthlyDividends[m] ? h.monthlyDividends[m].amount : null;
