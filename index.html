@@ -1426,9 +1426,11 @@
             const decExtraDiv = history[11] ? (history[11].dca + history[11].drip) : 0;
             const synergyRate = decBaseDiv > 0 ? (decExtraDiv / decBaseDiv) * 100 : 0;
 
+            const growthSign = totalGrowthRate > 0 ? '+' : '';
+
             document.getElementById('dash-bar-summary').innerHTML = `
-                <li class="flex items-start gap-2.5 mb-1.5"><div class="w-1.5 h-1.5 rounded-full bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.6)] mt-1 flex-shrink-0"></div> <div class="leading-relaxed text-slate-200">순수 DCA+DRIP 시너지: 연말 기본 배당 대비 <strong class="text-yellow-400">+${synergyRate.toFixed(1)}%</strong> 추가 수익 예상</div></li>
-                <li class="flex items-start gap-2.5"><div class="w-1.5 h-1.5 rounded-full bg-brand shadow-[0_0_8px_rgba(59,130,246,0.6)] mt-1 flex-shrink-0"></div> <div class="leading-relaxed text-slate-400">포트폴리오 총 성장률: 1월 대비 <strong class="text-brand">${totalGrowthRate.toFixed(1)}%</strong> 증가 예상 (추가매수 포함)</div></li>
+                <li class="flex items-center gap-2.5 mb-1.5"><div class="w-1.5 h-1.5 rounded-full bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.6)] flex-shrink-0"></div> <div class="text-slate-200">DCA+DRIP 시너지: <strong class="text-yellow-400">+${synergyRate.toFixed(1)}%</strong></div></li>
+                <li class="flex items-center gap-2.5"><div class="w-1.5 h-1.5 rounded-full bg-brand shadow-[0_0_8px_rgba(59,130,246,0.6)] flex-shrink-0"></div> <div class="text-slate-400">포트폴리오 성장률(1월 대비): <strong class="text-brand">${growthSign}${totalGrowthRate.toFixed(1)}%</strong></div></li>
             `;
 
             const w = 1000;
