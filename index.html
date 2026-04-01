@@ -53,8 +53,8 @@
         circle { transition: stroke-dasharray 1s ease-in-out, stroke-dashoffset 1s ease-in-out; }
 
         /* ==============================================================
-           글씨 크기 전용 스케일링
-           ============================================================== */
+            글씨 크기 전용 스케일링
+            ============================================================== */
         body.font-sm-mode { font-size: 14px !important; }
         body.font-lg-mode { font-size: 18px !important; }
 
@@ -464,7 +464,7 @@
                             <i class="fas fa-calendar-plus text-emerald-400"></i> 월 적립식 매수 (DCA)
                         </label>
                         <div class="relative">
-                            <input type="number" id="input-dca-amount" placeholder="매월 추가 투자금 (예: 500000)" class="w-full max-w-full bg-bgMain border border-slate-600 rounded-xl px-3 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-all text-sm appearance-none pr-12">
+                            <input type="number" id="input-dca-amount" oninput="updateExpectedDividends()" placeholder="매월 추가 투자금 (예: 500000)" class="w-full max-w-full bg-bgMain border border-slate-600 rounded-xl px-3 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-all text-sm appearance-none pr-12">
                             <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-[10px] text-slate-500 font-bold">원/월</span>
                         </div>
                         <p class="text-[9px] text-slate-500 mt-1.5 px-1 leading-tight">입력하신 금액은 연말까지의 배당 및 총자산 시뮬레이션 그래프에 자동으로 누적 합산됩니다.</p>
@@ -495,7 +495,7 @@
                             <i class="fas fa-sync-alt mr-2"></i> 배당풍차 (배당 재투자) 설정
                         </label>
                         <p class="text-[10px] text-slate-400 mb-3 leading-relaxed">이 종목의 배당금으로 매달 자동 매수할 타겟을 선택하세요.</p>
-                        <select id="select-target-ticker" class="w-full max-w-full bg-bgMain border border-brand/30 rounded-xl px-3 py-3 text-white text-sm focus:outline-none focus:border-brand appearance-none truncate">
+                        <select id="select-target-ticker" onchange="updateExpectedDividends()" class="w-full max-w-full bg-bgMain border border-brand/30 rounded-xl px-3 py-3 text-white text-sm focus:outline-none focus:border-brand appearance-none truncate">
                         </select>
                     </div>
                 </div>
@@ -520,6 +520,7 @@
             <input type="hidden" id="quick-acc-id">
             <input type="hidden" id="quick-source-id">
             <input type="hidden" id="quick-is-drip">
+            <input type="hidden" id="quick-action-month">
             
             <!-- 재투자 타겟 정보 주입 영역 (동적 활성화) -->
             <div id="quick-target-container" class="mb-4" style="display: none;"></div>
@@ -748,7 +749,11 @@
                 if(res.ok) {
                     showToast("수동 업데이트 완료! 데이터를 새로고침합니다.");
                     closeModal('modal-manual-update');
-                    await forceSyncData(); 
+                    
+                    // 서버 DB에 기록되는 시간을 벌기 위해 1초 후 동기화 진행 (업데이트 데이터 씹힘 방지)
+                    setTimeout(async () => {
+                        await forceSyncData(); 
+                    }, 1000);
                 } else {
                     showToast("업데이트 실패. API를 확인하세요.");
                 }
@@ -1407,9 +1412,16 @@
             });
             barContainer.innerHTML = chartHTML;
 
-            const growthRate = currentDiv > 0 ? ((decDiv - currentDiv) / currentDiv) * 100 : 0;
+            // 수정 1: 배당 상승률(성장률)을 현재 월 기준에서 1월(최초월) 기준으로 고정
+            let baseDivForGrowth = history[0] ? history[0].total : 0;
+            if (baseDivForGrowth === 0) {
+                const firstValid = history.find(v => v.total > 0);
+                if (firstValid) baseDivForGrowth = firstValid.total;
+            }
+            const growthRate = baseDivForGrowth > 0 ? ((decDiv - baseDivForGrowth) / baseDivForGrowth) * 100 : 0;
+
             document.getElementById('dash-bar-summary').innerHTML = `
-                <li class="flex items-start gap-2.5"><div class="w-1.5 h-1.5 rounded-full bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.6)] mt-1 flex-shrink-0"></div> <div class="leading-relaxed">추가 투자 시너지: 배당수익 <strong class="text-yellow-400">${growthRate.toFixed(1)}%</strong> 상승 (DCA+DRIP)</div></li>
+                <li class="flex items-start gap-2.5"><div class="w-1.5 h-1.5 rounded-full bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.6)] mt-1 flex-shrink-0"></div> <div class="leading-relaxed">올해 배당 시너지: 총수익 <strong class="text-yellow-400">${growthRate.toFixed(1)}%</strong> 상승 예상 (DCA+DRIP)</div></li>
             `;
 
             const w = 1000;
@@ -1576,7 +1588,6 @@
             const trRateSign = predictedTRRate > 0 ? '+' : '';
             const trRateColor = predictedTRRate > 0 ? 'text-up' : (predictedTRRate < 0 ? 'text-down' : 'text-slate-400');
             
-            // v1.68: 예상 총 투자 원금 텍스트 정렬을 위의 두 항목과 완벽하게 동일한 2줄 포맷으로 수정
             const principalSummaryHtml = `
                 <span class="block text-[11px] text-slate-400 mb-0.5">예상 총 투자 원금</span>
                 <span class="block text-[13px]"><span class="text-slate-300 mr-1">${formatMoney(finalPrincipal)}원</span> <i class="fas fa-caret-right text-slate-500 text-[10px] mx-1"></i> <span class="text-slate-300">TR: <strong class="${trRateColor}">${trRateSign}${predictedTRRate.toFixed(2)}%</strong></span></span>
@@ -1663,25 +1674,41 @@
                         const dividendPnlPct = invested > 0 ? (accDivReceived / invested) * 100 : 0;
                         const divSign = dividendPnlPct > 0 ? '+' : '';
                         
-                        let isExDateThisMonth = false;
+                        // 수정 2: 배당/재투자 안내 기준이 되는 타겟 월(Target Month)을 실제 API 배당락일 기반으로 추적
+                        let targetMonth = currentMonth;
                         let exDateStr = '';
+                        let showDivPrompt = false;
+                        let showReinvestPrompt = false;
+
                         if (mData.date) {
                             const exD = new Date(mData.date);
-                            if (exD.getMonth() === today.getMonth() && exD.getFullYear() === today.getFullYear()) {
-                                isExDateThisMonth = true;
-                                exDateStr = `${exD.getMonth() + 1}/${exD.getDate()}`;
+                            const exM = exD.getMonth() + 1;
+                            
+                            // 배당락일이 최근 15일 전 ~ 60일 후 사이인 경우에만 해당 월을 타겟으로 잡음
+                            const daysDiff = (today - exD) / (1000 * 60 * 60 * 24);
+                            if (daysDiff >= -15 && daysDiff <= 60) {
+                                targetMonth = exM;
+                                exDateStr = `${exM}/${exD.getDate()}`;
                             }
                         }
 
-                        const actualCurrentDiv = h.monthlyDividends && h.monthlyDividends[currentMonth] ? h.monthlyDividends[currentMonth].amount : null;
-                        const isActual = (actualCurrentDiv !== null && actualCurrentDiv !== undefined);
-                        const isDripDone = h.dripStatus && h.dripStatus[currentMonth];
+                        const actualDivAmount = h.monthlyDividends && h.monthlyDividends[targetMonth] !== undefined && h.monthlyDividends[targetMonth] !== null ? h.monthlyDividends[targetMonth].amount : null;
+                        const hasEnteredDiv = actualDivAmount !== null;
+                        const isDripDone = h.dripStatus && h.dripStatus[targetMonth];
                         const hasTarget = h.targetTicker && h.targetTicker !== '';
+
+                        if (exDateStr !== '') {
+                            if (!hasEnteredDiv) {
+                                showDivPrompt = true;
+                            } else if (hasEnteredDiv && !isDripDone && hasTarget) {
+                                showReinvestPrompt = true;
+                            }
+                        }
 
                         let noticeBanner = '';
                         let actionBtn = '';
 
-                        if (isExDateThisMonth && !isActual) {
+                        if (showDivPrompt) {
                             noticeBanner = `
                                 <div class="mt-3 bg-gradient-to-r from-brand/20 to-blue-900/40 border border-brand/80 shadow-[0_0_15px_rgba(59,130,246,0.6)] rounded-xl p-2.5 flex items-center justify-between animate-pulse cursor-pointer" onclick="event.stopPropagation(); openEditHoldingModal('${acc.id}', '${h.id}')">
                                     <span class="text-[11px] sm:text-xs font-bold text-white flex items-center gap-2">
@@ -1690,15 +1717,15 @@
                                     <span class="text-[10px] bg-brand text-white px-2 py-1 rounded shadow cursor-pointer hover:bg-brandHover transition-colors flex-shrink-0 ml-2">입력하기</span>
                                 </div>
                             `;
-                            actionBtn = `<button onclick="event.stopPropagation(); openQuickAddModal('${acc.id}', '${h.id}', false)" class="bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold transition-all flex items-center gap-1.5 shadow-sm whitespace-nowrap active:scale-95"><i class="fas fa-cart-plus"></i> 추가 매수</button>`;
-                        } else if (isExDateThisMonth && isActual && !isDripDone && hasTarget) {
+                            actionBtn = `<button onclick="event.stopPropagation(); openQuickAddModal('${acc.id}', '${h.id}', false, ${targetMonth})" class="bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold transition-all flex items-center gap-1.5 shadow-sm whitespace-nowrap active:scale-95"><i class="fas fa-cart-plus"></i> 추가 매수</button>`;
+                        } else if (showReinvestPrompt) {
                             actionBtn = `
-                                <button onclick="event.stopPropagation(); openQuickAddModal('${acc.id}', '${h.id}', true)" class="bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-white px-3 sm:px-4 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-extrabold transition-all flex items-center gap-1.5 shadow-[0_0_15px_rgba(16,185,129,0.8)] whitespace-nowrap animate-pulse border border-emerald-300">
+                                <button onclick="event.stopPropagation(); openQuickAddModal('${acc.id}', '${h.id}', true, ${targetMonth})" class="bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-white px-3 sm:px-4 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-extrabold transition-all flex items-center gap-1.5 shadow-[0_0_15px_rgba(16,185,129,0.8)] whitespace-nowrap animate-pulse border border-emerald-300">
                                     <i class="fas fa-sync-alt animate-[spin_3s_linear_infinite]"></i> 추가 매수 (재투자)
                                 </button>
                             `;
                         } else {
-                            actionBtn = `<button onclick="event.stopPropagation(); openQuickAddModal('${acc.id}', '${h.id}', false)" class="bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold transition-all flex items-center gap-1.5 shadow-sm whitespace-nowrap active:scale-95"><i class="fas fa-cart-plus"></i> 추가 매수</button>`;
+                            actionBtn = `<button onclick="event.stopPropagation(); openQuickAddModal('${acc.id}', '${h.id}', false, ${targetMonth})" class="bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold transition-all flex items-center gap-1.5 shadow-sm whitespace-nowrap active:scale-95"><i class="fas fa-cart-plus"></i> 추가 매수</button>`;
                         }
 
                         const singleLineStats = `
@@ -1908,15 +1935,52 @@
 
         function updateExpectedDividends() {
             const ticker = document.getElementById('select-ticker').value;
-            const qty = parseFloat(document.getElementById('input-quantity').value) || 0;
-            const mData = marketData[ticker] || { div: 0 };
+            const baseQty = parseFloat(document.getElementById('input-quantity').value) || 0;
+            const dcaAmount = parseFloat(document.getElementById('input-dca-amount').value) || 0;
+            const targetTicker = document.getElementById('select-target-ticker').value;
+            
+            const mData = marketData[ticker] || { price: 0, div: 0 };
+            const targetData = marketData[targetTicker] || { price: 0, div: 0 };
             
             const actualTaxRate = KR_TICKERS.includes(ticker) ? 0 : currentModalAccTaxRate;
-            const expected = Math.floor(qty * mData.div * (1 - actualTaxRate));
             const taxLabelText = actualTaxRate > 0 ? '(세후)' : '(비과세)';
+            const currentMonth = new Date().getMonth() + 1;
             
+            const isSelfDrip = (targetTicker === ticker && targetTicker !== '');
+
             document.querySelectorAll('.expected-div-container').forEach(el => {
-                el.innerHTML = `예상<span class="text-[8px] text-slate-500 ml-0.5">${taxLabelText}</span>: <strong class="text-slate-200 text-[11px] ml-0.5">${formatMoney(expected)}</strong>원`;
+                const m = parseInt(el.getAttribute('data-month'));
+                let expectedForMonth = 0;
+
+                if (m <= currentMonth) {
+                    // 과거 달 및 이번 달은 현재 기본 수량 기준으로 고정
+                    expectedForMonth = Math.floor(baseQty * mData.div * (1 - actualTaxRate));
+                } else {
+                    // 미래 달(ex. 4월일 때 5월, 6월...)은 DCA 및 배당 재투자(DRIP)를 누적 계산하여 예상액을 증가시킴
+                    let tempQty = baseQty;
+                    let tempDcaRemainder = 0;
+                    
+                    for (let i = currentMonth; i < m; i++) {
+                        // 1. DCA 추가 수량 계산
+                        if (dcaAmount > 0 && mData.price > 0) {
+                            tempDcaRemainder += dcaAmount;
+                            const dcaShares = Math.floor(tempDcaRemainder / mData.price);
+                            if (dcaShares > 0) {
+                                tempQty += dcaShares;
+                                tempDcaRemainder -= dcaShares * mData.price;
+                            }
+                        }
+                        // 2. 자가 재투자(DRIP) 추가 수량 계산
+                        if (isSelfDrip && targetData.price > 0) {
+                            const monthDiv = tempQty * mData.div * (1 - actualTaxRate);
+                            const dripShares = Math.floor(monthDiv / targetData.price);
+                            tempQty += dripShares;
+                        }
+                    }
+                    expectedForMonth = Math.floor(tempQty * mData.div * (1 - actualTaxRate));
+                }
+                
+                el.innerHTML = `예상<span class="text-[8px] text-slate-500 ml-0.5">${taxLabelText}</span>: <strong class="text-slate-200 text-[11px] ml-0.5">${formatMoney(expectedForMonth)}</strong>원`;
             });
         }
 
@@ -1967,7 +2031,8 @@
             document.getElementById('modal-add-holding').classList.remove('hidden');
         }
 
-        function openQuickAddModal(accId, holdingId, isDrip = false) {
+        // 수정 2: Quick Add 모달 호출 시 actionMonth(타겟 월) 인자 추가 및 전달
+        function openQuickAddModal(accId, holdingId, isDrip = false, actionMonth = null) {
             const acc = userData.accounts.find(a => a.id === accId);
             const sourceH = acc.holdings.find(h => h.id === holdingId);
             if (!acc || !sourceH) return;
@@ -1975,6 +2040,9 @@
             document.getElementById('quick-acc-id').value = accId;
             document.getElementById('quick-source-id').value = holdingId;
             document.getElementById('quick-is-drip').value = isDrip ? 'true' : 'false';
+
+            const targetMonth = actionMonth || (new Date().getMonth() + 1);
+            document.getElementById('quick-action-month').value = targetMonth;
 
             document.getElementById('quick-add-price').value = '';
             document.getElementById('quick-add-qty').value = '';
@@ -2001,8 +2069,8 @@
                 titleEl.innerHTML = `<i class="fas fa-sync-alt text-emerald-400"></i> 배당 재투자 매수`;
                 infoTextEl.innerHTML = `<i class="fas fa-info-circle mr-1"></i>입력하시면 타겟 종목에 수량이 병합(매수)되며 재투자 사이클이 완료됩니다.`;
 
-                const currentMonth = new Date().getMonth() + 1;
-                const actualCurrentDiv = sourceH.monthlyDividends && sourceH.monthlyDividends[currentMonth] ? sourceH.monthlyDividends[currentMonth].amount : 0;
+                // currentMonth 대신 targetMonth (api 기반 실제 배당기준월)에서 배당금 내역 가져오기
+                const actualCurrentDiv = sourceH.monthlyDividends && sourceH.monthlyDividends[targetMonth] ? sourceH.monthlyDividends[targetMonth].amount : 0;
 
                 let canBuyQty = 0;
                 if (targetData && targetData.price > 0) {
@@ -2036,7 +2104,7 @@
                                 </div>
                             </div>
                             <p class="text-[12px] text-slate-300 bg-slate-800/60 px-3 py-2.5 rounded-xl border border-slate-700/50 flex items-center justify-between">
-                                <span>배당금 <span class="text-white font-bold ml-1">${formatMoney(actualCurrentDiv)}원</span></span>
+                                <span>${targetMonth}월 배당금 <span class="text-white font-bold ml-1">${formatMoney(actualCurrentDiv)}원</span></span>
                                 <span><i class="fas fa-arrow-right text-emerald-500 text-[10px] mx-2"></i></span>
                                 <span><span class="text-emerald-400 font-bold text-[14px]">${canBuyQty}주</span> 매수 가능</span>
                             </p>
@@ -2060,6 +2128,7 @@
             const accId = document.getElementById('quick-acc-id').value;
             const sourceHId = document.getElementById('quick-source-id').value;
             const isDrip = document.getElementById('quick-is-drip').value === 'true';
+            const targetMonth = parseInt(document.getElementById('quick-action-month').value) || (new Date().getMonth() + 1);
             
             const addPrice = parseFloat(document.getElementById('quick-add-price').value);
             const addQty = parseFloat(document.getElementById('quick-add-qty').value);
@@ -2103,9 +2172,8 @@
             }
 
             if (isDrip) {
-                const currentMonth = new Date().getMonth() + 1;
                 if (!sourceH.dripStatus) sourceH.dripStatus = {};
-                sourceH.dripStatus[currentMonth] = true;
+                sourceH.dripStatus[targetMonth] = true;
                 showToast("재투자 매수가 완료되었습니다!");
             } else {
                 showToast("추가 매수 내역이 기존 종목과 성공적으로 병합되었습니다.");
