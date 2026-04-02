@@ -1687,47 +1687,30 @@
                         if (mData.date) {
                             const exD = new Date(mData.date);
                             const exM = exD.getMonth() + 1;
+                            exDateStr = `${exM}/${exD.getDate()}`;
                             
-                            // 날짜 차이 계산
-                            const todayAtMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-                            const exDateAtMidnight = new Date(exD.getFullYear(), exD.getMonth(), exD.getDate());
-                            const daysDiff = (todayAtMidnight - exDateAtMidnight) / (1000 * 60 * 60 * 24);
+                            const divRecord = h.monthlyDividends ? h.monthlyDividends[exM] : null;
+                            const hasEntered = divRecord && divRecord.amount !== undefined && divRecord.amount !== null && String(divRecord.amount).trim() !== '';
 
-                            // 최근 -5일(미래) ~ 45일(과거) 이내의 배당락일만 '현재 유효한 사이클'로 판별
-                            if (daysDiff >= -5 && daysDiff <= 45) {
-                                const divRecord = h.monthlyDividends ? h.monthlyDividends[exM] : null;
-                                const hasEntered = divRecord && divRecord.amount !== undefined && divRecord.amount !== null && String(divRecord.amount).trim() !== '';
-
-                                // 배당금을 아직 입력하지 않았다면 Step 1 활성화
-                                if (!hasEntered) {
-                                    targetMonthForDivPrompt = exM; 
-                                    exDateStr = `${exM}/${exD.getDate()}`;
-                                }
+                            if (!hasEntered) {
+                                targetMonthForDivPrompt = exM; 
                             }
                         }
 
-                        // 2. 가장 최근에 입력한 배당금을 기준으로 재투자(Step 2: 추가 매수) 확인
-                        let latestEnteredMonth = -1;
-                        if (h.monthlyDividends) {
-                            // 12월부터 1월까지 역순으로 검사하여 가장 최근에 입력한 달을 찾음
+                        // 2. 입력된 배당금을 기반으로 재투자 필요 여부 확인 (Step 2: 재투자 버튼)
+                        if (!targetMonthForDivPrompt && h.monthlyDividends) {
+                            // 최근 월부터 역순으로 검색하여 가장 최근에 입력된 달의 기록을 찾음
                             for (let m = 12; m >= 1; m--) {
                                 const divRecord = h.monthlyDividends[m];
                                 if (divRecord && divRecord.amount !== undefined && divRecord.amount !== null && String(divRecord.amount).trim() !== '') {
-                                    latestEnteredMonth = m;
-                                    break;
-                                }
-                            }
-                        }
+                                    const amount = parseFloat(divRecord.amount);
+                                    const isDripped = h.dripStatus && h.dripStatus[m];
+                                    const hasTarget = h.targetTicker && h.targetTicker.trim() !== '';
 
-                        if (latestEnteredMonth !== -1) {
-                            const amount = parseFloat(h.monthlyDividends[latestEnteredMonth].amount);
-                            const isDripped = h.dripStatus && h.dripStatus[latestEnteredMonth];
-                            const hasTarget = h.targetTicker && h.targetTicker.trim() !== '';
-
-                            if (amount > 0 && !isDripped && hasTarget) {
-                                // Step 1이 활성화되어 있지 않을 때만 Step 2 발동 (배당금 입력을 먼저 하도록 순서 강제)
-                                if (!targetMonthForDivPrompt) {
-                                    targetMonthForDripPrompt = latestEnteredMonth;
+                                    if (amount > 0 && !isDripped && hasTarget) {
+                                        targetMonthForDripPrompt = m;
+                                    }
+                                    break; // 가장 최근 달 기록을 찾으면 루프 종료
                                 }
                             }
                         }
