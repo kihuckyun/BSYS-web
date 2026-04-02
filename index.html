@@ -1412,24 +1412,23 @@
             });
             barContainer.innerHTML = chartHTML;
 
-            // 수정 1: 배당 상승률 분리 (총 성장률 vs 순수 DCA+DRIP 시너지)
             let firstMonthDiv = history[0] ? history[0].total : 0;
             if (firstMonthDiv === 0) {
                 const firstValid = history.find(v => v.total > 0);
                 if (firstValid) firstMonthDiv = firstValid.total;
             }
             
-            // 1월 대비 연말 총 배당금 배수 (수동 추가매수 포함) -> 배수로 변경 적용
             const totalMultiplier = firstMonthDiv > 0 ? (decDiv / firstMonthDiv) : 0;
             
-            // 순수 DCA + DRIP 시너지 효과 (연말 기본 배당금 대비 추가 수익 비율)
             const decBaseDiv = history[11] ? history[11].base : 0;
             const decExtraDiv = history[11] ? (history[11].dca + history[11].drip) : 0;
             const synergyRate = decBaseDiv > 0 ? (decExtraDiv / decBaseDiv) * 100 : 0;
 
+            const growthSign = totalMultiplier > 1 ? '+' : '';
+
             document.getElementById('dash-bar-summary').innerHTML = `
                 <li class="flex items-center gap-2.5 mb-1.5"><div class="w-1.5 h-1.5 rounded-full bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.6)] flex-shrink-0"></div> <div class="text-slate-200">DCA+DRIP 시너지: <strong class="text-yellow-400">+${synergyRate.toFixed(1)}%</strong></div></li>
-                <li class="flex items-center gap-2.5"><div class="w-1.5 h-1.5 rounded-full bg-brand shadow-[0_0_8px_rgba(59,130,246,0.6)] flex-shrink-0"></div> <div class="text-slate-400">포트폴리오 배당 규모(1월 대비): <strong class="text-brand">${totalMultiplier.toFixed(1)}배</strong></div></li>
+                <li class="flex items-center gap-2.5"><div class="w-1.5 h-1.5 rounded-full bg-brand shadow-[0_0_8px_rgba(59,130,246,0.6)] flex-shrink-0"></div> <div class="text-slate-400">포트폴리오 성장률(1월 대비): <strong class="text-brand">${growthSign}${totalMultiplier.toFixed(1)}배</strong></div></li>
             `;
 
             const w = 1000;
@@ -1517,7 +1516,7 @@
                 const py = (getY(decD.tr) / h_svg) * 100;
                 const isUp = decD.tr >= decD.principal;
                 const borderColor = isUp ? 'border-[#34d399]' : 'border-[#f87171]';
-                const textColor = isUp ? 'text-emerald-400' : 'text-red-400';
+                const textColor = isUp ? 'textemerald-400' : 'text-red-400';
                 
                 overlayHtml += `
                     <div class="absolute w-3.5 h-3.5 bg-[#1e293b] border-[2.5px] ${borderColor} rounded-full z-10" style="left: ${px}%; top: ${py}%; margin-left: -7px; margin-top: -7px;"></div>
@@ -1682,30 +1681,31 @@
                         const dividendPnlPct = invested > 0 ? (accDivReceived / invested) * 100 : 0;
                         const divSign = dividendPnlPct > 0 ? '+' : '';
                         
-                        // [Step 1] 배당락일 도과, 배당금 입력 필요 여부 확인
+                        // [Step 1 & Step 2] 배당락일 기준 명확한 타겟팅 로직
                         let targetMonthForDivPrompt = null;
+                        let targetMonthForDripPrompt = null;
                         let exDateStr = '';
+
                         if (mData.date) {
                             const exD = new Date(mData.date);
                             const exM = exD.getMonth() + 1;
                             const daysDiff = (today - exD) / (1000 * 60 * 60 * 24);
-                            if (daysDiff >= -15 && daysDiff <= 60) {
-                                const actualDiv = h.monthlyDividends && h.monthlyDividends[exM] !== undefined && h.monthlyDividends[exM] !== null ? h.monthlyDividends[exM].amount : null;
-                                if (actualDiv === null) {
-                                    targetMonthForDivPrompt = exM;
-                                    exDateStr = `${exM}/${exD.getDate()}`;
-                                }
-                            }
-                        }
+                            
+                            // 최근 20일 전 ~ 40일 후 사이의 유효한 최신 배당락일 사이클만 추적
+                            if (daysDiff >= -20 && daysDiff <= 40) {
+                                exDateStr = `${exM}/${exD.getDate()}`;
+                                
+                                const actualDiv = h.monthlyDividends && h.monthlyDividends[exM] !== undefined && h.monthlyDividends[exM] !== null && h.monthlyDividends[exM].amount !== '' ? h.monthlyDividends[exM].amount : null;
+                                const isDripped = h.dripStatus && h.dripStatus[exM];
+                                const hasTarget = h.targetTicker && h.targetTicker !== '';
 
-                        // [Step 2] 배당금은 입력했으나, 재투자를 안 한 가장 최근 달 찾기
-                        let targetMonthForDripPrompt = null;
-                        for (let m = currentMonth; m >= 1; m--) {
-                            const actualDiv = h.monthlyDividends && h.monthlyDividends[m] !== undefined && h.monthlyDividends[m] !== null ? h.monthlyDividends[m].amount : null;
-                            const isDripped = h.dripStatus && h.dripStatus[m];
-                            if (actualDiv !== null && actualDiv > 0 && !isDripped && h.targetTicker) {
-                                targetMonthForDripPrompt = m;
-                                break;
+                                if (actualDiv === null) {
+                                    // Step 1: 배당금 입력이 안 된 상태
+                                    targetMonthForDivPrompt = exM;
+                                } else if (actualDiv > 0 && !isDripped && hasTarget) {
+                                    // Step 2: 배당금은 입력했으나 재투자를 안 한 상태
+                                    targetMonthForDripPrompt = exM;
+                                }
                             }
                         }
 
