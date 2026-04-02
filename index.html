@@ -1516,7 +1516,7 @@
                 const py = (getY(decD.tr) / h_svg) * 100;
                 const isUp = decD.tr >= decD.principal;
                 const borderColor = isUp ? 'border-[#34d399]' : 'border-[#f87171]';
-                const textColor = isUp ? 'textemerald-400' : 'text-red-400';
+                const textColor = isUp ? 'text-emerald-400' : 'text-red-400';
                 
                 overlayHtml += `
                     <div class="absolute w-3.5 h-3.5 bg-[#1e293b] border-[2.5px] ${borderColor} rounded-full z-10" style="left: ${px}%; top: ${py}%; margin-left: -7px; margin-top: -7px;"></div>
@@ -1689,10 +1689,20 @@
                         if (mData.date) {
                             const exD = new Date(mData.date);
                             const exM = exD.getMonth() + 1;
-                            const daysDiff = (today - exD) / (1000 * 60 * 60 * 24);
                             
-                            // 최근 20일 전 ~ 40일 후 사이의 유효한 최신 배당락일 사이클만 추적
-                            if (daysDiff >= -20 && daysDiff <= 40) {
+                            // 스마트 사이클 판별 로직:
+                            // 1. 배당락일의 월이 현재 월과 같음
+                            // 2. 배당락일이 지난달 말(20일 이후)이고, 현재가 이번달 초(15일 이전)인 경우 (월초 배당 종목의 이월 현상 해결)
+                            let isCurrentCycle = false;
+                            if (exM === currentMonth) {
+                                isCurrentCycle = true;
+                            } else if (exM === (currentMonth === 1 ? 12 : currentMonth - 1)) {
+                                if (exD.getDate() >= 20 && today.getDate() <= 15) {
+                                    isCurrentCycle = true;
+                                }
+                            }
+
+                            if (isCurrentCycle) {
                                 exDateStr = `${exM}/${exD.getDate()}`;
                                 
                                 const actualDiv = h.monthlyDividends && h.monthlyDividends[exM] !== undefined && h.monthlyDividends[exM] !== null && h.monthlyDividends[exM].amount !== '' ? h.monthlyDividends[exM].amount : null;
@@ -1700,10 +1710,10 @@
                                 const hasTarget = h.targetTicker && h.targetTicker !== '';
 
                                 if (actualDiv === null) {
-                                    // Step 1: 배당금 입력이 안 된 상태
+                                    // Step 1: 배당금 입력 전 -> 종목 겉면 노란색 반짝임
                                     targetMonthForDivPrompt = exM;
                                 } else if (actualDiv > 0 && !isDripped && hasTarget) {
-                                    // Step 2: 배당금은 입력했으나 재투자를 안 한 상태
+                                    // Step 2: 배당금 입력 완료, 재투자 전 -> 초록색 추가매수 버튼 반짝임
                                     targetMonthForDripPrompt = exM;
                                 }
                             }
@@ -1712,10 +1722,10 @@
                         let noticeBanner = '';
                         let actionBtn = '';
 
-                        // Step 1: 배당금 입력 알림 배너 (버튼은 일반 버튼)
+                        // Step 1: 배당금 입력 알림 배너
                         if (targetMonthForDivPrompt) {
                             noticeBanner = `
-                                <div class="mt-3 bg-gradient-to-r from-yellow-900/30 to-yellow-800/10 border border-yellow-500/40 shadow-[0_0_15px_rgba(234,179,8,0.2)] rounded-xl p-2.5 flex items-center justify-between cursor-pointer relative z-10" onclick="event.stopPropagation(); openEditHoldingModal('${acc.id}', '${h.id}')">
+                                <div class="mt-3 bg-yellow-900/40 border border-yellow-500/50 shadow-[0_0_15px_rgba(250,204,21,0.2)] rounded-xl p-2.5 flex items-center justify-between cursor-pointer relative z-10" onclick="event.stopPropagation(); openEditHoldingModal('${acc.id}', '${h.id}')">
                                     <span class="text-[11px] sm:text-xs font-bold text-yellow-300 flex items-center gap-2">
                                         <i class="fas fa-bell animate-bounce"></i> 배당(${exDateStr})이 들어왔어요~ 입력해주세요!
                                     </span>
@@ -1774,7 +1784,7 @@
 
                         // Step 1: 종목 전체 겉면 테두리 노란색 반짝임 효과
                         let glowLayer = targetMonthForDivPrompt 
-                            ? `<div class="absolute inset-0 border-[1.5px] border-yellow-400/60 rounded-[20px] bg-yellow-400/5 animate-[pulse_2s_ease-in-out_infinite] pointer-events-none z-0"></div>` 
+                            ? `<div class="absolute inset-0 rounded-[20px] ring-2 ring-yellow-400/80 bg-yellow-400/10 animate-pulse pointer-events-none z-0 shadow-[0_0_15px_rgba(250,204,21,0.3)]"></div>` 
                             : '';
                         let wrapperPadding = targetMonthForDivPrompt ? 'p-3 sm:p-4 -mx-3 sm:-mx-4 mt-2 mb-2 relative' : 'py-3 relative';
 
