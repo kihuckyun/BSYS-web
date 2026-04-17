@@ -603,19 +603,21 @@
             "441640": "KODEX 미국배당커버드콜액티브",
             "491620": "RISE 미국테크100데일리고정커버드콜",
             "475720": "RISE 200위클리커버드콜",
-            "0144l0": "KODEX 미국성장커버드콜액티브" 
+            "0144l0": "KODEX 미국성장커버드콜액티브",
+            "0167b0": "SOL 200타겟위클리커버드콜" 
         };
         const getTickerName = (ticker) => ETF_NAMES[ticker] || `ETF(${ticker})`;
 
         const US_TICKERS = ["441640", "491620", "0144l0"];
-        const KR_TICKERS = ["498400", "475720"];
+        const KR_TICKERS = ["498400", "475720", "0167b0"];
         
         const DIV_SCHEDULE = {
             "475720": "early",  
             "491620": "early",  
             "0144l0": "early",  
             "498400": "mid",    
-            "441640": "mid"     
+            "441640": "mid",
+            "0167b0": "mid"     
         };
 
         /* ==========================================
@@ -715,6 +717,14 @@
                             availableTickers.push(ticker);
                         }
                         marketData[ticker][type] = rawData[key];
+                    }
+                });
+
+                // 프론트엔드에 하드코딩된 종목들이 아직 API에 없더라도 선택할 수 있도록 강제 추가
+                Object.keys(ETF_NAMES).forEach(ticker => {
+                    if (!marketData[ticker]) {
+                        marketData[ticker] = { price: 0, div: 0, date: '' };
+                        availableTickers.push(ticker);
                     }
                 });
 
@@ -1095,7 +1105,7 @@
                     const qty = data.qty;
                     const mData = marketData[ticker] || { div: 0 };
 
-                    const pct = ((amount / totalAsset) * 100).toFixed(1);
+                    const pct = totalAsset > 0 ? ((amount / totalAsset) * 100).toFixed(1) : 0;
                     const initial = getTickerName(ticker).substring(0, 1);
                     const color = index < colors.length ? colors[index] : '#64748b';
                     
@@ -1678,7 +1688,7 @@
                         const dividendPnlPct = invested > 0 ? (accDivReceived / invested) * 100 : 0;
                         const divSign = dividendPnlPct > 0 ? '+' : '';
                         
-                        // [Step 1 & Step 2] 배당락일 기준 명확한 타겟팅 로직
+                        // [Step 1 & Step 2] 배당/재투자 2단계 스텝 명확한 분리 로직
                         let targetMonthForDivPrompt = null;
                         let targetMonthForDripPrompt = null;
                         let exDateStr = '';
@@ -1691,7 +1701,7 @@
                             const exDateAtMidnight = new Date(exD.getFullYear(), exD.getMonth(), exD.getDate());
                             const daysDiff = (todayAtMidnight - exDateAtMidnight) / (1000 * 60 * 60 * 24);
 
-                            // API가 최신 업데이트된 데이터인지 확인 (과도한 과거/미래 방지)
+                            // API가 최신 업데이트된 데이터인지 확인 (과거 15일 ~ 미래 45일 이내)
                             if (daysDiff >= -15 && daysDiff <= 45) { 
                                 exDateStr = `${exM}/${exD.getDate()}`;
                                 
@@ -2151,11 +2161,11 @@
             const isDrip = document.getElementById('quick-is-drip').value === 'true';
             const targetMonth = parseInt(document.getElementById('quick-action-month').value) || (new Date().getMonth() + 1);
             
-            const addPrice = parseFloat(document.getElementById('quick-add-price').value);
-            const addQty = parseFloat(document.getElementById('quick-add-qty').value);
+            const addPrice = parseFloat(document.getElementById('quick-add-price').value) || 0;
+            const addQty = parseFloat(document.getElementById('quick-add-qty').value) || 0;
 
-            if (isNaN(addPrice) || isNaN(addQty) || addPrice <= 0 || addQty <= 0) {
-                return showToast("추가 매수 단가와 수량을 정확히 입력하세요.");
+            if (isNaN(addPrice) || isNaN(addQty) || addPrice < 0 || addQty < 0) {
+                return showToast("추가 매수 단가와 수량을 0 이상으로 정확히 입력하세요.");
             }
 
             const acc = userData.accounts.find(a => a.id === accId);
@@ -2174,7 +2184,7 @@
                 const currentTotalCost = targetH.quantity * targetH.avgPrice;
                 const additionalCost = addQty * addPrice;
                 const newTotalQty = targetH.quantity + addQty;
-                const newAvgPrice = (currentTotalCost + additionalCost) / newTotalQty;
+                const newAvgPrice = newTotalQty > 0 ? (currentTotalCost + additionalCost) / newTotalQty : 0;
 
                 targetH.quantity = newTotalQty;
                 targetH.avgPrice = newAvgPrice;
@@ -2209,14 +2219,14 @@
             const accId = document.getElementById('input-holding-acc-id').value;
             const hId = document.getElementById('input-holding-id').value;
             const ticker = document.getElementById('select-ticker').value;
-            const avgPrice = parseFloat(document.getElementById('input-avg-price').value);
-            const qty = parseFloat(document.getElementById('input-quantity').value);
+            const avgPrice = parseFloat(document.getElementById('input-avg-price').value) || 0;
+            const qty = parseFloat(document.getElementById('input-quantity').value) || 0;
             const baseAccumulatedDiv = parseFloat(document.getElementById('input-base-div').value) || 0; 
             const targetTicker = document.getElementById('select-target-ticker').value;
             const dcaAmount = parseFloat(document.getElementById('input-dca-amount').value) || 0; 
 
-            if (!ticker || isNaN(avgPrice) || isNaN(qty) || avgPrice <= 0 || qty <= 0) {
-                return showToast("평단가와 수량을 정확히 입력하세요.");
+            if (!ticker || isNaN(avgPrice) || isNaN(qty) || avgPrice < 0 || qty < 0) {
+                return showToast("평단가와 수량은 0 이상이어야 합니다.");
             }
 
             const acc = userData.accounts.find(a => a.id === accId);
@@ -2261,7 +2271,7 @@
                 if (existingHolding) {
                     const totalCost = (existingHolding.avgPrice * existingHolding.quantity) + (avgPrice * qty);
                     existingHolding.quantity += qty;
-                    existingHolding.avgPrice = totalCost / existingHolding.quantity;
+                    existingHolding.avgPrice = existingHolding.quantity > 0 ? (totalCost / existingHolding.quantity) : 0;
                     existingHolding.baseAccumulatedDiv = (existingHolding.baseAccumulatedDiv || 0) + baseAccumulatedDiv;
                     existingHolding.dcaAmount = dcaAmount; 
                     
@@ -2350,5 +2360,3 @@
     </script>
 </body>
 </html>
-
-
