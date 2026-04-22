@@ -800,45 +800,73 @@
         }
 
 function exportData() {
-    // 1. 기존 유저 데이터를 깊은 복사하여 원본 데이터는 보존
-    const exportPayload = JSON.parse(JSON.stringify(userData));
+    try {
+        // 1. 기존 유저 데이터 깊은 복사 (에러 방어)
+        const exportPayload = JSON.parse(JSON.stringify(userData || { accounts: [] }));
+        
+        const currentMonth = new Date().getMonth() + 1;
+        const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
 
-    // 현재 달과 다음 달 계산 (12월 다음은 1월로 처리)
-    const currentMonth = new Date().getMonth() + 1;
-    const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
-
-    // 2. 각 계좌의 종목을 돌며 현재가(Market Price) 및 익월 예상 배당금 주입
-    exportPayload.accounts.forEach(acc => {
-        const accTaxRate = acc.taxRate !== undefined ? acc.taxRate : 0.154; // 계좌별 설정 세율
-
-        acc.holdings.forEach(h => {
-            const mData = marketData[h.ticker];
-
-            if (mData) {
-                // [기존 추가분] 현재가 및 자산 스냅샷
-                if (mData.price !== undefined) {
-                    h.currentPrice = mData.price;       
-                    h.lastMarketDate = mData.date;     
-                    h.currentAssetSnapshot = h.quantity * mData.price; 
-                } else {
-                    h.currentPrice = 0;
-                }
-
-                // [신규 추가분] 익월 예상 배당금(세후) 계산 로직
-                // 국내 상장 ETF(KR_TICKERS)는 비과세(0), 그 외는 계좌 세율 적용
-                const actualTaxRate = KR_TICKERS.includes(h.ticker) ? 0 : accTaxRate;
-                const expectedDiv = h.quantity * (mData.div || 0) * (1 - actualTaxRate);
+        // 2. 가격 및 익월 배당 데이터 안전하게 주입
+        if (exportPayload.accounts && Array.isArray(exportPayload.accounts)) {
+            exportPayload.accounts.forEach(acc => {
+                const accTaxRate = acc.taxRate !== undefined ? acc.taxRate : 0.154;
                 
-                // 사용자가 익월 배당금을 수동으로 미리 적어뒀다면 그 값을, 없다면 자동 계산된 예상치를 저장
-                const actualNextDiv = h.monthlyDividends && h.monthlyDividends[nextMonth] ? h.monthlyDividends[nextMonth].amount : null;
-                h.nextExpectedDividend = (actualNextDiv !== null && actualNextDiv !== undefined) ? actualNextDiv : expectedDiv;
+                if (acc.holdings && Array.isArray(acc.holdings)) {
+                    acc.holdings.forEach(h => {
+                        // marketData가 로드되지 않았을 경우를 대비한 안전 장치
+                        const mData = marketData ? marketData[h.ticker] : null;
 
-            } else {
-                h.currentPrice = 0;
-                h.nextExpectedDividend = 0;
-            }
-        });
-    });
+                        if (mData) {
+                            h.currentPrice = mData.price || 0;
+                            h.lastMarketDate = mData.date || '';
+                            h.currentAssetSnapshot = (h.quantity || 0) * (mData.price || 0);
+
+                            const isKr = (typeof KR_TICKERS !== 'undefined') && KR_TICKERS.includes(h.ticker);
+                            const actualTaxRate = isKr ? 0 : accTaxRate;
+                            const expectedDiv = (h.quantity || 0) * (mData.div || 0) * (1 - actualTaxRate);
+
+                            let actualNextDiv = null;
+                            if (h.monthlyDividends && h.monthlyDividends[nextMonth] !== undefined) {
+                                actualNextDiv = h.monthlyDividends[nextMonth].amount;
+                            }
+                            
+                            h.nextExpectedDividend = (actualNextDiv !== null && actualNextDiv !== undefined) ? actualNextDiv : expectedDiv;
+                        } else {
+                            h.currentPrice = 0;
+                            h.nextExpectedDividend = 0;
+                        }
+                    });
+                }
+            });
+        }
+
+        // 3. 파일 다운로드 처리 (한국 시간 기준 파일명 생성)
+        const dataStr = JSON.stringify(exportPayload);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const exportFileDefaultName = `income_snowball_snapshot_${year}${month}${day}.json`;
+
+        const linkElement = document.createElement('a');
+        linkElement.href = url;
+        linkElement.download = exportFileDefaultName;
+        document.body.appendChild(linkElement);
+        linkElement.click();
+        document.body.removeChild(linkElement);
+        URL.revokeObjectURL(url);
+        
+        showToast("현재가 및 예상 배당금이 포함된 스냅샷이 저장되었습니다!");
+    } catch (error) {
+        // 에러가 발생하면 상단 알림창에 원인을 띄워줌
+        console.error("Export Error: ", error);
+        showToast("저장 오류: " + error.message);
+    }
+}
 
     // 3. 현재 정보가 포함된 데이터를 JSON으로 변환
     const dataStr = JSON.stringify(exportPayload);
