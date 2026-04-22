@@ -799,22 +799,40 @@
             document.getElementById('modal-data-management').classList.remove('hidden');
         }
 
-        function exportData() {
-            const dataStr = JSON.stringify(userData);
-            const blob = new Blob([dataStr], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const exportFileDefaultName = `income_snowball_backup_${new Date().toISOString().slice(0,10).replace(/-/g, '')}.json`;
+function exportData() {
+    // 1. 기존 유저 데이터를 깊은 복사하여 원본 데이터는 보존
+    const exportPayload = JSON.parse(JSON.stringify(userData));
 
-            const linkElement = document.createElement('a');
-            linkElement.href = url;
-            linkElement.download = exportFileDefaultName;
-            document.body.appendChild(linkElement);
-            linkElement.click();
-            document.body.removeChild(linkElement);
-            URL.revokeObjectURL(url);
-            
-            showToast("데이터가 기기에 저장되었습니다.");
-        }
+    // 2. 각 계좌의 종목을 돌며 현재가(Market Price)를 주입
+    exportPayload.accounts.forEach(acc => {
+        acc.holdings.forEach(h => {
+            const mData = marketData[h.ticker];
+            if (mData && mData.price !== undefined) {
+                h.currentPrice = mData.price;       // 백업 시점의 현재가
+                h.lastMarketDate = mData.date;     // 가격 데이터 기준일 (선택사항)
+                h.currentAssetSnapshot = h.quantity * mData.price; // 당시 평가 금액 (선택사항)
+            } else {
+                h.currentPrice = 0;
+            }
+        });
+    });
+
+    // 3. 현재 정보가 포함된 데이터를 JSON으로 변환
+    const dataStr = JSON.stringify(exportPayload);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const exportFileDefaultName = `income_snowball_snapshot_${new Date().toISOString().slice(0,10).replace(/-/g, '')}.json`;
+
+    const linkElement = document.createElement('a');
+    linkElement.href = url;
+    linkElement.download = exportFileDefaultName;
+    document.body.appendChild(linkElement);
+    linkElement.click();
+    document.body.removeChild(linkElement);
+    URL.revokeObjectURL(url);
+    
+    showToast("현재가가 포함된 스냅샷이 저장되었습니다.");
+}
 
         function importData(event) {
             const file = event.target.files[0];
