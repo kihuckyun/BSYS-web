@@ -861,15 +861,7 @@ function exportData() {
         URL.revokeObjectURL(url);
         
         showToast("현재가 및 예상 배당금이 포함된 스냅샷이 저장되었습니다!");
-    } 
-    
-    catch (error) {
-        // 에러가 발생하면 상단 알림창에 원인을 띄워줌
-        console.error("Export Error: ", error);
-        showToast("저장 오류: " + error.message);
-    }
-}
-        catch (error) {
+    } catch (error) {
         // 에러가 발생하면 상단 알림창에 원인을 띄워줌
         console.error("Export Error: ", error);
         showToast("저장 오류: " + error.message);
