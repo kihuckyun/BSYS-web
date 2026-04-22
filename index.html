@@ -791,74 +791,85 @@
             document.getElementById('modal-data-management').classList.remove('hidden');
         }
 
-        function exportData() {
-            try {
-                // 1. 기존 유저 데이터 깊은 복사 (에러 방어)
-                const exportPayload = JSON.parse(JSON.stringify(userData || { accounts: [] }));
+function exportData() {
+    try {
+        // 1. 기존 유저 데이터 깊은 복사 (에러 방어)
+        const exportPayload = JSON.parse(JSON.stringify(userData || { accounts: [] }));
+        
+        const currentMonth = new Date().getMonth() + 1;
+        const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+
+        // [핵심 추가] 대시보드 화면에 계산되어 있는 총 자산과 익월(5월) 배당금을 통째로 가져와서 JSON 최상단에 저장
+        const totalAssetEl = document.getElementById('dash-total-asset-sub');
+        const nextDivEl = document.getElementById('dash-next-div');
+        
+        if (totalAssetEl) {
+            exportPayload.totalAssetAmount = parseInt(totalAssetEl.textContent.replace(/[^0-9]/g, '')) || 0;
+        }
+        if (nextDivEl) {
+            exportPayload.totalNextExpectedDividend = parseInt(nextDivEl.textContent.replace(/[^0-9]/g, '')) || 0;
+        }
+
+        // 2. 가격 및 익월 배당 데이터 안전하게 주입
+        if (exportPayload.accounts && Array.isArray(exportPayload.accounts)) {
+            exportPayload.accounts.forEach(acc => {
+                const accTaxRate = acc.taxRate !== undefined ? acc.taxRate : 0.154;
                 
-                const currentMonth = new Date().getMonth() + 1;
-                const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+                if (acc.holdings && Array.isArray(acc.holdings)) {
+                    acc.holdings.forEach(h => {
+                        // marketData가 로드되지 않았을 경우를 대비한 안전 장치
+                        const mData = marketData ? marketData[h.ticker] : null;
 
-                // 2. 가격 및 익월 배당 데이터 안전하게 주입
-                if (exportPayload.accounts && Array.isArray(exportPayload.accounts)) {
-                    exportPayload.accounts.forEach(acc => {
-                        const accTaxRate = acc.taxRate !== undefined ? acc.taxRate : 0.154;
-                        
-                        if (acc.holdings && Array.isArray(acc.holdings)) {
-                            acc.holdings.forEach(h => {
-                                // marketData가 로드되지 않았을 경우를 대비한 안전 장치
-                                const mData = marketData ? marketData[h.ticker] : null;
+                        if (mData) {
+                            h.currentPrice = mData.price || 0;
+                            h.lastMarketDate = mData.date || '';
+                            h.currentAssetSnapshot = (h.quantity || 0) * (mData.price || 0);
 
-                                if (mData) {
-                                    h.currentPrice = mData.price || 0;
-                                    h.lastMarketDate = mData.date || '';
-                                    h.currentAssetSnapshot = (h.quantity || 0) * (mData.price || 0);
+                            const isKr = (typeof KR_TICKERS !== 'undefined') && KR_TICKERS.includes(h.ticker);
+                            const actualTaxRate = isKr ? 0 : accTaxRate;
+                            const expectedDiv = (h.quantity || 0) * (mData.div || 0) * (1 - actualTaxRate);
 
-                                    const isKr = (typeof KR_TICKERS !== 'undefined') && KR_TICKERS.includes(h.ticker);
-                                    const actualTaxRate = isKr ? 0 : accTaxRate;
-                                    const expectedDiv = (h.quantity || 0) * (mData.div || 0) * (1 - actualTaxRate);
-
-                                    let actualNextDiv = null;
-                                    if (h.monthlyDividends && h.monthlyDividends[nextMonth] !== undefined) {
-                                        actualNextDiv = h.monthlyDividends[nextMonth].amount;
-                                    }
-                                    
-                                    h.nextExpectedDividend = (actualNextDiv !== null && actualNextDiv !== undefined) ? actualNextDiv : expectedDiv;
-                                } else {
-                                    h.currentPrice = 0;
-                                    h.nextExpectedDividend = 0;
-                                }
-                            });
+                            let actualNextDiv = null;
+                            if (h.monthlyDividends && h.monthlyDividends[nextMonth] !== undefined) {
+                                actualNextDiv = h.monthlyDividends[nextMonth].amount;
+                            }
+                            
+                            h.nextExpectedDividend = (actualNextDiv !== null && actualNextDiv !== undefined) ? actualNextDiv : expectedDiv;
+                        } else {
+                            h.currentPrice = 0;
+                            h.nextExpectedDividend = 0;
                         }
                     });
                 }
-
-                // 3. 파일 다운로드 처리 (한국 시간 기준 파일명 생성)
-                const dataStr = JSON.stringify(exportPayload);
-                const blob = new Blob([dataStr], { type: "application/json" });
-                const url = URL.createObjectURL(blob);
-                
-                const today = new Date();
-                const year = today.getFullYear();
-                const month = String(today.getMonth() + 1).padStart(2, '0');
-                const day = String(today.getDate()).padStart(2, '0');
-                const exportFileDefaultName = `income_snowball_snapshot_${year}${month}${day}.json`;
-
-                const linkElement = document.createElement('a');
-                linkElement.href = url;
-                linkElement.download = exportFileDefaultName;
-                document.body.appendChild(linkElement);
-                linkElement.click();
-                document.body.removeChild(linkElement);
-                URL.revokeObjectURL(url);
-                
-                showToast("현재가 및 예상 배당금이 포함된 스냅샷이 저장되었습니다!");
-            } catch (error) {
-                // 에러가 발생하면 상단 알림창에 원인을 띄워줌
-                console.error("Export Error: ", error);
-                showToast("저장 오류: " + error.message);
-            }
+            });
         }
+
+        // 3. 파일 다운로드 처리 (한국 시간 기준 파일명 생성)
+        const dataStr = JSON.stringify(exportPayload);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const exportFileDefaultName = `income_snowball_snapshot_${year}${month}${day}.json`;
+
+        const linkElement = document.createElement('a');
+        linkElement.href = url;
+        linkElement.download = exportFileDefaultName;
+        document.body.appendChild(linkElement);
+        linkElement.click();
+        document.body.removeChild(linkElement);
+        URL.revokeObjectURL(url);
+        
+        showToast("총 자산 및 익월 예상 배당금이 포함된 스냅샷이 저장되었습니다!");
+    } catch (error) {
+        // 에러가 발생하면 상단 알림창에 원인을 띄워줌
+        console.error("Export Error: ", error);
+        showToast("저장 오류: " + error.message);
+    }
+}
 
         function importData(event) {
             const file = event.target.files[0];
