@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Income Snowball - 배당 재투자 트래커</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
         tailwind.config = {
@@ -179,8 +181,10 @@
 
     <main class="w-full px-4 sm:px-5 pt-2">
         
+        <!-- 제1관: 대시보드 -->
         <section id="tab-dashboard" class="tab-content active space-y-5 rounded-3xl p-1 bg-bgMain">
 
+            <!-- 1. 메인 월 배당금 카드 -->
             <div class="bg-gradient-to-br from-blue-600 to-blue-700 rounded-[28px] p-6 sm:p-7 glow-card relative overflow-hidden">
                 <div class="absolute -top-12 -right-12 w-40 h-40 bg-white opacity-5 rounded-full blur-2xl"></div>
                 <div class="absolute bottom-0 right-0 p-4 opacity-10 transform translate-x-4 translate-y-4">
@@ -224,6 +228,7 @@
                 </div>
             </div>
 
+            <!-- 2. 서브 지표 -->
             <div class="bg-cardBg rounded-[24px] p-5 border border-slate-800/60 shadow-sm relative overflow-hidden">
                 <div class="absolute top-0 right-0 w-32 h-32 bg-brand opacity-[0.03] rounded-full blur-xl transform translate-x-10 -translate-y-10"></div>
                 <div class="relative z-10 w-full">
@@ -258,6 +263,7 @@
                 </div>
             </div>
 
+            <!-- 3. 자산 구성 및 월별 차트 -->
             <div class="bg-cardBg rounded-[28px] p-5 sm:p-7 border border-slate-800/60 shadow-lg">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-sm font-bold text-white">자산 구성</h3>
@@ -297,6 +303,7 @@
                 </div>
             </div>
 
+            <!-- 4. 종소세 과세 한도 현황 -->
             <div class="bg-cardBg rounded-[24px] p-5 border border-slate-800/60 shadow-sm relative overflow-hidden mt-4">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-sm font-bold text-white flex items-center gap-2">
@@ -321,6 +328,7 @@
                 </div>
             </div>
 
+            <!-- 5. 포트폴리오 상세 비중 리스트 -->
             <div class="mt-4 pb-2">
                 <div class="flex justify-between items-center mb-3 px-1">
                     <h3 class="text-lg font-bold text-white">보유 종목 현황</h3>
@@ -332,6 +340,7 @@
             
         </section>
 
+        <!-- 제2관: 포트폴리오 관리 -->
         <section id="tab-portfolio" class="tab-content space-y-5">
             <div class="flex justify-between items-center px-1 mb-2">
                 <h2 class="text-2xl font-extrabold text-white">My Portfolio</h2>
@@ -344,6 +353,7 @@
 
     </main>
 
+    <!-- 하단 탭 바 -->
     <nav class="fixed bottom-0 left-0 w-full bg-bgMain/95 backdrop-blur-xl border-t border-slate-800 pb-safe z-40" id="bottom-nav">
         <div class="flex justify-center items-center h-20 px-4 max-w-md mx-auto">
             <button onclick="switchTab('dashboard')" class="tab-btn w-1/2 h-full flex flex-col items-center justify-center text-brand transition-all relative" data-target="dashboard">
@@ -358,6 +368,7 @@
         </div>
     </nav>
 
+    <!-- [모달] 폰트 크기 설정 -->
     <div id="modal-settings" class="fixed inset-0 z-[80] hidden bg-bgMain/90 backdrop-blur-sm flex items-center justify-center px-4">
         <div class="bg-cardBg rounded-[28px] w-full max-w-sm p-6 sm:p-7 border border-slate-700 shadow-2xl mx-auto">
             <h3 class="text-xl font-bold mb-2 text-white text-center">글씨 크기 설정</h3>
@@ -377,6 +388,7 @@
         </div>
     </div>
 
+    <!-- [모달] 데이터 백업/복원 -->
     <div id="modal-data-management" class="fixed inset-0 z-[70] hidden bg-bgMain/90 backdrop-blur-sm flex items-center justify-center px-4">
         <div class="bg-cardBg rounded-[28px] w-full max-w-sm p-6 sm:p-7 border border-slate-700 shadow-2xl mx-auto">
             <h3 class="text-xl font-bold mb-2 text-white text-center">데이터 백업 및 복원</h3>
@@ -400,6 +412,7 @@
         </div>
     </div>
 
+    <!-- [모달] 계좌 추가 -->
     <div id="modal-add-account" class="fixed inset-0 z-50 hidden bg-bgMain/90 backdrop-blur-sm flex items-center justify-center px-4">
         <div class="bg-cardBg rounded-[28px] w-full max-w-sm p-6 sm:p-7 border border-slate-700 shadow-2xl mx-auto">
             <h3 class="text-xl font-bold mb-6 text-white text-center">계좌 추가</h3>
@@ -423,6 +436,7 @@
         </div>
     </div>
 
+    <!-- [모달] 종목 전체 추가/수정 -->
     <div id="modal-add-holding" class="fixed inset-0 z-[60] hidden bg-bgMain/90 backdrop-blur-sm flex items-center justify-center px-4 py-8">
         <div class="bg-cardBg rounded-[28px] w-full max-w-[400px] p-6 sm:p-7 border border-slate-700 max-h-[90vh] overflow-y-auto shadow-2xl custom-scrollbar mx-auto">
             <h3 class="text-xl font-bold mb-5 text-white text-center" id="modal-holding-title">종목 추가</h3>
@@ -497,6 +511,7 @@
         </div>
     </div>
 
+    <!-- [모달] 빠른 추가 매수 (Quick Add) -->
     <div id="modal-quick-add" class="fixed inset-0 z-[60] hidden bg-bgMain/90 backdrop-blur-sm flex items-center justify-center px-4 py-8">
         <div class="bg-cardBg rounded-[28px] w-full max-w-[400px] p-6 sm:p-7 border border-slate-700 max-h-[90vh] overflow-y-auto shadow-2xl custom-scrollbar mx-auto">
             <h3 class="text-xl font-bold mb-5 text-white text-center flex items-center justify-center gap-2" id="quick-add-title">
@@ -507,6 +522,7 @@
             <input type="hidden" id="quick-is-drip">
             <input type="hidden" id="quick-action-month">
             
+            <!-- 재투자 타겟 정보 주입 영역 (동적 활성화) -->
             <div id="quick-target-container" class="mb-4" style="display: none;"></div>
 
             <div class="space-y-4 mb-6 bg-slate-800/40 p-5 rounded-2xl border border-slate-700">
@@ -534,6 +550,7 @@
         </div>
     </div>
 
+    <!-- [모달] 수동 배당금 업데이트 -->
     <div id="modal-manual-update" class="fixed inset-0 z-[70] hidden bg-bgMain/90 backdrop-blur-sm flex items-center justify-center px-4">
         <div class="bg-cardBg rounded-[28px] w-full max-w-sm p-6 sm:p-7 border border-slate-700 shadow-2xl mx-auto">
             <h3 class="text-xl font-bold mb-2 text-white text-center">API 수동 업데이트</h3>
@@ -542,7 +559,8 @@
                 <div>
                     <label class="block text-[11px] text-slate-400 mb-1.5 font-medium ml-1">업데이트할 종목 선택</label>
                     <select id="post-ticker" class="w-full max-w-full bg-bgMain border border-slate-700 rounded-xl px-3 py-3.5 text-white text-sm focus:border-brand focus:outline-none appearance-none truncate">
-                        </select>
+                        <!-- JS로 자동 채워짐 -->
+                    </select>
                 </div>
                 <div>
                     <label class="block text-[11px] text-slate-400 mb-1.5 font-medium ml-1">1주당 배당금 (원)</label>
@@ -672,7 +690,13 @@
             try {
                 await fetchMarketData();
                 renderAll();
-                showToast("데이터가 최신으로 동기화되었습니다.");
+                
+                // 🔥 [신규] 화면 갱신 완료 후 부부자산 앱으로 데이터 자동 푸시
+                if (typeof window.pushDividendToCoupleApp === 'function') {
+                    await window.pushDividendToCoupleApp();
+                }
+
+                showToast("데이터 동기화 및 부부 자산 현황 업데이트 완료!");
             } catch (error) {
                 showToast("동기화에 실패했습니다. 네트워크를 확인하세요.");
             } finally {
@@ -791,85 +815,85 @@
             document.getElementById('modal-data-management').classList.remove('hidden');
         }
 
-function exportData() {
-    try {
-        // 1. 기존 유저 데이터 깊은 복사 (에러 방어)
-        const exportPayload = JSON.parse(JSON.stringify(userData || { accounts: [] }));
-        
-        const currentMonth = new Date().getMonth() + 1;
-        const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
-
-        // [핵심 추가] 대시보드 화면에 계산되어 있는 총 자산과 익월(5월) 배당금을 통째로 가져와서 JSON 최상단에 저장
-        const totalAssetEl = document.getElementById('dash-total-asset-sub');
-        const nextDivEl = document.getElementById('dash-next-div');
-        
-        if (totalAssetEl) {
-            exportPayload.totalAssetAmount = parseInt(totalAssetEl.textContent.replace(/[^0-9]/g, '')) || 0;
-        }
-        if (nextDivEl) {
-            exportPayload.totalNextExpectedDividend = parseInt(nextDivEl.textContent.replace(/[^0-9]/g, '')) || 0;
-        }
-
-        // 2. 가격 및 익월 배당 데이터 안전하게 주입
-        if (exportPayload.accounts && Array.isArray(exportPayload.accounts)) {
-            exportPayload.accounts.forEach(acc => {
-                const accTaxRate = acc.taxRate !== undefined ? acc.taxRate : 0.154;
+        function exportData() {
+            try {
+                // 1. 기존 유저 데이터 깊은 복사 (에러 방어)
+                const exportPayload = JSON.parse(JSON.stringify(userData || { accounts: [] }));
                 
-                if (acc.holdings && Array.isArray(acc.holdings)) {
-                    acc.holdings.forEach(h => {
-                        // marketData가 로드되지 않았을 경우를 대비한 안전 장치
-                        const mData = marketData ? marketData[h.ticker] : null;
+                const currentMonth = new Date().getMonth() + 1;
+                const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
 
-                        if (mData) {
-                            h.currentPrice = mData.price || 0;
-                            h.lastMarketDate = mData.date || '';
-                            h.currentAssetSnapshot = (h.quantity || 0) * (mData.price || 0);
+                // [핵심 추가] 대시보드 화면에 계산되어 있는 총 자산과 익월(5월) 배당금을 통째로 가져와서 JSON 최상단에 저장
+                const totalAssetEl = document.getElementById('dash-total-asset-sub');
+                const nextDivEl = document.getElementById('dash-next-div');
+                
+                if (totalAssetEl) {
+                    exportPayload.totalAssetAmount = parseInt(totalAssetEl.textContent.replace(/[^0-9]/g, '')) || 0;
+                }
+                if (nextDivEl) {
+                    exportPayload.totalNextExpectedDividend = parseInt(nextDivEl.textContent.replace(/[^0-9]/g, '')) || 0;
+                }
 
-                            const isKr = (typeof KR_TICKERS !== 'undefined') && KR_TICKERS.includes(h.ticker);
-                            const actualTaxRate = isKr ? 0 : accTaxRate;
-                            const expectedDiv = (h.quantity || 0) * (mData.div || 0) * (1 - actualTaxRate);
+                // 2. 가격 및 익월 배당 데이터 안전하게 주입
+                if (exportPayload.accounts && Array.isArray(exportPayload.accounts)) {
+                    exportPayload.accounts.forEach(acc => {
+                        const accTaxRate = acc.taxRate !== undefined ? acc.taxRate : 0.154;
+                        
+                        if (acc.holdings && Array.isArray(acc.holdings)) {
+                            acc.holdings.forEach(h => {
+                                // marketData가 로드되지 않았을 경우를 대비한 안전 장치
+                                const mData = marketData ? marketData[h.ticker] : null;
 
-                            let actualNextDiv = null;
-                            if (h.monthlyDividends && h.monthlyDividends[nextMonth] !== undefined) {
-                                actualNextDiv = h.monthlyDividends[nextMonth].amount;
-                            }
-                            
-                            h.nextExpectedDividend = (actualNextDiv !== null && actualNextDiv !== undefined) ? actualNextDiv : expectedDiv;
-                        } else {
-                            h.currentPrice = 0;
-                            h.nextExpectedDividend = 0;
+                                if (mData) {
+                                    h.currentPrice = mData.price || 0;
+                                    h.lastMarketDate = mData.date || '';
+                                    h.currentAssetSnapshot = (h.quantity || 0) * (mData.price || 0);
+
+                                    const isKr = (typeof KR_TICKERS !== 'undefined') && KR_TICKERS.includes(h.ticker);
+                                    const actualTaxRate = isKr ? 0 : accTaxRate;
+                                    const expectedDiv = (h.quantity || 0) * (mData.div || 0) * (1 - actualTaxRate);
+
+                                    let actualNextDiv = null;
+                                    if (h.monthlyDividends && h.monthlyDividends[nextMonth] !== undefined) {
+                                        actualNextDiv = h.monthlyDividends[nextMonth].amount;
+                                    }
+                                    
+                                    h.nextExpectedDividend = (actualNextDiv !== null && actualNextDiv !== undefined) ? actualNextDiv : expectedDiv;
+                                } else {
+                                    h.currentPrice = 0;
+                                    h.nextExpectedDividend = 0;
+                                }
+                            });
                         }
                     });
                 }
-            });
+
+                // 3. 파일 다운로드 처리 (한국 시간 기준 파일명 생성)
+                const dataStr = JSON.stringify(exportPayload);
+                const blob = new Blob([dataStr], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                const exportFileDefaultName = `income_snowball_snapshot_${year}${month}${day}.json`;
+
+                const linkElement = document.createElement('a');
+                linkElement.href = url;
+                linkElement.download = exportFileDefaultName;
+                document.body.appendChild(linkElement);
+                linkElement.click();
+                document.body.removeChild(linkElement);
+                URL.revokeObjectURL(url);
+                
+                showToast("총 자산 및 익월 예상 배당금이 포함된 스냅샷이 저장되었습니다!");
+            } catch (error) {
+                // 에러가 발생하면 상단 알림창에 원인을 띄워줌
+                console.error("Export Error: ", error);
+                showToast("저장 오류: " + error.message);
+            }
         }
-
-        // 3. 파일 다운로드 처리 (한국 시간 기준 파일명 생성)
-        const dataStr = JSON.stringify(exportPayload);
-        const blob = new Blob([dataStr], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        const exportFileDefaultName = `income_snowball_snapshot_${year}${month}${day}.json`;
-
-        const linkElement = document.createElement('a');
-        linkElement.href = url;
-        linkElement.download = exportFileDefaultName;
-        document.body.appendChild(linkElement);
-        linkElement.click();
-        document.body.removeChild(linkElement);
-        URL.revokeObjectURL(url);
-        
-        showToast("총 자산 및 익월 예상 배당금이 포함된 스냅샷이 저장되었습니다!");
-    } catch (error) {
-        // 에러가 발생하면 상단 알림창에 원인을 띄워줌
-        console.error("Export Error: ", error);
-        showToast("저장 오류: " + error.message);
-    }
-}
 
         function importData(event) {
             const file = event.target.files[0];
@@ -949,6 +973,9 @@ function exportData() {
             let mBasePrincipal = 0; 
             let mBaseAsset = 0; 
 
+            // 🔥 [신규] 월별 배당금 합산을 위한 객체 추가
+            let aggregatedMonthlyDivs = {1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0, 10:0, 11:0, 12:0};
+
             userData.accounts.forEach(acc => {
                 const accTaxRate = acc.taxRate !== undefined ? acc.taxRate : 0.154;
 
@@ -1002,6 +1029,9 @@ function exportData() {
                         }
 
                         annualTotalPostTax += postTaxDiv;
+                        // 🔥 [신규] 월별 세후 배당금을 파이어베이스 전송용 객체에 누적
+                        aggregatedMonthlyDivs[m] += postTaxDiv;
+
                         if (isTaxable) {
                             annualTaxablePreTax += preTaxDiv;
                         } else {
@@ -1216,6 +1246,12 @@ function exportData() {
             }
 
             renderDashboardSimulation(mBasePrincipal, mBaseAsset, annualTotalPostTax);
+
+            // 🔥 [신규] 파이어베이스로 쏴줄 전역 변수에 현재 계산된 값들을 매핑 (저장)
+            window.totalInvestment = totalInvested;
+            window.totalAccumulatedDividend = totalAccumulatedDiv;
+            window.totalCurrentValue = totalAsset;
+            window.allMonthlyDividends = aggregatedMonthlyDivs;
         }
 
         function renderDashboardSimulation(basePrincipal, baseAsset, annualWithoutDrip) {
@@ -1607,14 +1643,18 @@ function exportData() {
                     <svg viewBox="0 0 ${w} ${h_svg}" class="absolute top-0 left-0 w-full h-full overflow-visible drop-shadow-lg">
                         ${defsHtml}
                         
+                        <!-- Fill Areas (Clipping) -->
                         <path d="${pathTRFillGreen}" fill="url(#grad-green)" clip-path="url(#clip-above)" />
                         <path d="${pathTRFillRed}" fill="url(#grad-red)" clip-path="url(#clip-below)" />
 
+                        <!-- Principal Line -->
                         <path d="${pathP}" fill="none" stroke="#64748b" stroke-width="4" stroke-dasharray="8,8" opacity="0.6" />
 
+                        <!-- Past TR Line (Solid) -->
                         <path d="${pathTRPast}" fill="none" stroke="#10b981" stroke-width="6" stroke-linecap="round" clip-path="url(#clip-above)" />
                         <path d="${pathTRPast}" fill="none" stroke="#ef4444" stroke-width="6" stroke-linecap="round" clip-path="url(#clip-below)" />
 
+                        <!-- Future TR Line (Dashed) -->
                         <path d="${pathTRFuture}" fill="none" stroke="#34d399" stroke-width="6" stroke-dasharray="12,12" stroke-linecap="round" clip-path="url(#clip-above)" />
                         <path d="${pathTRFuture}" fill="none" stroke="#f87171" stroke-width="6" stroke-dasharray="12,12" stroke-linecap="round" clip-path="url(#clip-below)" />
                     </svg>
@@ -2418,6 +2458,84 @@ function exportData() {
                 toast.classList.add('opacity-0', 'pointer-events-none');
             }, 3000);
         }
+    </script>
+
+    <!-- [파이어베이스 연동 엔진 모듈] -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+
+        // 💡 아래 빈칸에 본인의 Firebase 정보를 빠짐없이 입력하세요.
+        const myFirebaseConfig = {
+            apiKey: "AIzaSyDrzoH50qvRtirqi4nAleoss5xTVLJJyL8",
+            authDomain: "total-asset-f1796.firebaseapp.com",
+            projectId: "total-asset-f1796",
+            storageBucket: "total-asset-f1796.firebasestorage.app",
+            messagingSenderId: "441490194600",
+            appId: "1:441490194600:web:bd4889cb0796dd4694429d"
+        };
+
+        const firebaseConfig = Object.keys(myFirebaseConfig).length > 0 && myFirebaseConfig.apiKey !== "" ? myFirebaseConfig : (typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {});
+        const app = (firebaseConfig.apiKey) ? initializeApp(firebaseConfig) : null;
+        const db = app ? getFirestore(app) : null;
+        const auth = app ? getAuth(app) : null;
+
+        let currentUser = null;
+
+        // 파이어베이스 인증 (데이터 전송 권한 획득)
+        const initAuth = async () => {
+            if (!auth) return;
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    const credential = await signInWithCustomToken(auth, __initial_auth_token);
+                    currentUser = credential.user;
+                } else {
+                    const credential = await signInAnonymously(auth);
+                    currentUser = credential.user;
+                }
+            } catch (error) {
+                console.error("Firebase 인증 실패:", error);
+            }
+        };
+
+        if (app) {
+            initAuth();
+        }
+
+        window.pushDividendToCoupleApp = async () => {
+            if(!db || !auth) return;
+            
+            // 전송 전에 인증이 완료되었는지 확인
+            if (!currentUser) {
+                await initAuth();
+                if (!currentUser) {
+                    console.error("인증 권한이 없어 파이어베이스로 전송할 수 없습니다.");
+                    return;
+                }
+            }
+
+            let rawPrincipal = window.totalInvestment || 0; 
+            let totalDivs = window.totalAccumulatedDividend || 0; 
+            let totalValue = window.totalCurrentValue || 0; 
+
+            const summary = {
+                rawPrincipal: rawPrincipal,
+                totalDivs: totalDivs,
+                principal: rawPrincipal - totalDivs,
+                totalValue: totalValue,
+                capitalGain: totalValue - rawPrincipal,
+                profit: totalValue - (rawPrincipal - totalDivs),
+                rate: (rawPrincipal - totalDivs) > 0 ? ((totalValue - (rawPrincipal - totalDivs)) / (rawPrincipal - totalDivs) * 100) : 0,
+                monthlyDivs: window.allMonthlyDividends || {}, 
+                timestamp: new Date().toISOString()
+            };
+
+            try {
+                await setDoc(doc(db, "artifacts", "gire-sunny-asset-app", "public", "data", "shared_assets", "latest_status"), { dividend: summary }, { merge: true });
+                console.log("부부 현황판 업데이트 완료");
+            } catch (e) { console.error("전송 실패:", e); }
+        };
     </script>
 </body>
 </html>
