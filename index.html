@@ -344,9 +344,16 @@
         <section id="tab-portfolio" class="tab-content space-y-5">
             <div class="flex justify-between items-center px-1 mb-2">
                 <h2 class="text-2xl font-extrabold text-white">My Portfolio</h2>
-                <button onclick="openAddAccountModal()" class="w-10 h-10 bg-brand text-white rounded-full hover:bg-brandHover transition-colors shadow-[0_4px_12px_rgba(59,130,246,0.4)] flex items-center justify-center">
-                    <i class="fas fa-plus"></i>
-                </button>
+                <div class="flex items-center gap-2.5">
+                    <!-- 🔥 [신규] 동기화 모드 선택 버튼 -->
+                    <button onclick="openUserModeModal()" id="btn-user-mode" class="w-10 h-10 bg-slate-700 text-slate-300 rounded-full hover:bg-slate-600 transition-colors shadow-sm flex items-center justify-center font-bold text-sm border border-slate-600" title="동기화 계정 선택">
+                        G
+                    </button>
+                    <!-- 기존 계좌 추가 버튼 -->
+                    <button onclick="openAddAccountModal()" class="w-10 h-10 bg-brand text-white rounded-full hover:bg-brandHover transition-colors shadow-[0_4px_12px_rgba(59,130,246,0.4)] flex items-center justify-center">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
             </div>
             <div id="portfolio-list" class="space-y-6 pb-2"></div>
         </section>
@@ -367,6 +374,24 @@
             </button>
         </div>
     </nav>
+
+    <!-- 🔥 [신규 모달] 사용자 동기화 모드 설정 -->
+    <div id="modal-user-mode" class="fixed inset-0 z-[80] hidden bg-bgMain/90 backdrop-blur-sm flex items-center justify-center px-4">
+        <div class="bg-cardBg rounded-[28px] w-full max-w-sm p-6 sm:p-7 border border-slate-700 shadow-2xl mx-auto">
+            <h3 class="text-xl font-bold mb-2 text-white text-center">동기화 계정 선택</h3>
+            <p class="text-[11px] text-slate-400 mb-6 text-center leading-relaxed">
+                선택한 계정으로 부부 자산 현황판에 데이터를 전송합니다.<br>게스트 모드에서는 파이어베이스로 전송되지 않습니다.
+            </p>
+            <div class="space-y-3 mb-8">
+                <button onclick="setUserMode('guest')" id="btn-mode-guest" class="w-full py-3.5 rounded-xl text-sm font-bold bg-slate-800 text-slate-300 hover:text-white transition-all border border-transparent">게스트 (G) - 전송 안 함</button>
+                <button onclick="setUserMode('host1')" id="btn-mode-host1" class="w-full py-3.5 rounded-xl text-sm font-bold bg-slate-800 text-slate-300 hover:text-white transition-all border border-transparent">호스트 1 (H1)</button>
+                <button onclick="setUserMode('host2')" id="btn-mode-host2" class="w-full py-3.5 rounded-xl text-sm font-bold bg-slate-800 text-slate-300 hover:text-white transition-all border border-transparent">호스트 2 (H2)</button>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="closeModal('modal-user-mode')" class="w-full py-3.5 rounded-xl text-sm font-bold bg-slate-800 text-slate-400 hover:bg-slate-700 transition-colors">닫기</button>
+            </div>
+        </div>
+    </div>
 
     <!-- [모달] 폰트 크기 설정 -->
     <div id="modal-settings" class="fixed inset-0 z-[80] hidden bg-bgMain/90 backdrop-blur-sm flex items-center justify-center px-4">
@@ -590,8 +615,8 @@
         let availableTickers = []; 
         let currentModalAccTaxRate = 0.154;
 
-        // 전역 앱 설정 (폰트 크기 모드: small, normal, large)
-        let appSettings = { fontMode: 'normal' };
+        // 전역 앱 설정 (폰트 크기 모드: small, normal, large / 동기화 모드: guest, host1, host2)
+        let appSettings = { fontMode: 'normal', userMode: 'guest' };
 
         let userData = {
             accounts: [],
@@ -640,6 +665,50 @@
                 setTimeout(() => loader.style.display = 'none', 300);
             }
         });
+
+        // 🔥 [신규] 사용자 동기화 모드 관련 함수
+        function openUserModeModal() {
+            updateUserModeUI(appSettings.userMode);
+            document.getElementById('modal-user-mode').classList.remove('hidden');
+        }
+
+        function setUserMode(mode) {
+            appSettings.userMode = mode;
+            saveLocalData();
+            updateUserModeButton();
+            closeModal('modal-user-mode');
+            showToast(`동기화 모드가 [${mode === 'guest' ? '게스트' : mode === 'host1' ? '호스트1' : '호스트2'}]로 변경되었습니다.`);
+        }
+
+        function updateUserModeButton() {
+            const btn = document.getElementById('btn-user-mode');
+            if(btn) {
+                if(appSettings.userMode === 'guest') {
+                    btn.textContent = 'G';
+                    btn.className = 'w-10 h-10 bg-slate-700 text-slate-300 rounded-full hover:bg-slate-600 transition-colors shadow-sm flex items-center justify-center font-bold text-sm border border-slate-600';
+                } else if(appSettings.userMode === 'host1') {
+                    btn.textContent = 'H1';
+                    btn.className = 'w-10 h-10 bg-indigo-600 text-white rounded-full hover:bg-indigo-500 transition-colors shadow-[0_0_10px_rgba(79,70,229,0.5)] flex items-center justify-center font-bold text-sm border border-indigo-400';
+                } else if(appSettings.userMode === 'host2') {
+                    btn.textContent = 'H2';
+                    btn.className = 'w-10 h-10 bg-rose-600 text-white rounded-full hover:bg-rose-500 transition-colors shadow-[0_0_10px_rgba(225,29,72,0.5)] flex items-center justify-center font-bold text-sm border border-rose-400';
+                }
+            }
+        }
+
+        function updateUserModeUI(mode) {
+            const modes = ['guest', 'host1', 'host2'];
+            modes.forEach(m => {
+                const el = document.getElementById('btn-mode-' + m);
+                if(el) {
+                    if (m === mode) {
+                        el.className = 'w-full py-3.5 rounded-xl text-sm font-bold bg-brand text-white transition-all shadow-md border border-brandHover';
+                    } else {
+                        el.className = 'w-full py-3.5 rounded-xl text-sm font-bold bg-slate-800 text-slate-400 hover:text-white transition-all border border-transparent hover:border-slate-600';
+                    }
+                }
+            });
+        }
 
         // 설정(글꼴 크기) 관련 기능
         function openSettingsModal() {
@@ -691,12 +760,12 @@
                 await fetchMarketData();
                 renderAll();
                 
-                // 🔥 [신규] 화면 갱신 완료 후 부부자산 앱으로 데이터 자동 푸시
+                // 🔥 [신규] 화면 갱신 완료 후 부부자산 앱으로 데이터 자동 푸시 (게스트 제외)
                 if (typeof window.pushDividendToCoupleApp === 'function') {
                     await window.pushDividendToCoupleApp();
                 }
 
-                showToast("데이터 동기화 및 부부 자산 현황 업데이트 완료!");
+                showToast("데이터 동기화 및 갱신이 완료되었습니다.");
             } catch (error) {
                 showToast("동기화에 실패했습니다. 네트워크를 확인하세요.");
             } finally {
@@ -800,9 +869,12 @@
                 userData = JSON.parse(saved);
                 if(userData.settings) {
                     appSettings = userData.settings;
+                    // 이전 버전 호환: userMode가 없으면 기본값 guest 적용
+                    if(!appSettings.userMode) appSettings.userMode = 'guest';
                 }
             }
             applyFontMode(appSettings.fontMode);
+            updateUserModeButton(); // 화면 로드 시 버튼 UI 적용
         }
 
         function saveLocalData() {
@@ -2466,7 +2538,7 @@
         import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 
-        // 💡 아래 빈칸은 내가 나중에 직접 채울게.
+        // 💡 아래 빈칸에 본인의 Firebase 정보를 빠짐없이 입력하세요.
         const myFirebaseConfig = {
             apiKey: "AIzaSyDrzoH50qvRtirqi4nAleoss5xTVLJJyL8",
             authDomain: "total-asset-f1796.firebaseapp.com",
@@ -2482,12 +2554,38 @@
         const auth = app ? getAuth(app) : null;
 
         // 파이어베이스 보안 규칙 통과를 위한 익명 로그인
-        if (auth) {
-            signInAnonymously(auth).catch(e => console.error("인증 에러:", e));
+        let currentUser = null;
+        const initAuth = async () => {
+            if (!auth) return;
+            try {
+                const credential = await signInAnonymously(auth);
+                currentUser = credential.user;
+            } catch (error) {
+                console.error("Firebase 인증 실패:", error);
+            }
+        };
+
+        if (app) {
+            initAuth();
         }
 
         window.pushDividendToCoupleApp = async () => {
-            if(!db) return;
+            // 1. 게스트 모드일 경우 전송을 원천 차단
+            if (appSettings.userMode === 'guest') {
+                console.log("게스트 모드: 파이어베이스로 데이터를 전송하지 않습니다.");
+                return;
+            }
+
+            if(!db || !auth) return;
+            
+            if (!currentUser) {
+                await initAuth();
+                if (!currentUser) {
+                    console.error("인증 권한이 없어 파이어베이스로 전송할 수 없습니다.");
+                    return;
+                }
+            }
+
             let rawPrincipal = window.totalInvestment || 0; 
             let totalDivs = window.totalAccumulatedDividend || 0; 
             let totalValue = window.totalCurrentValue || 0; 
@@ -2505,8 +2603,11 @@
             };
 
             try {
-                await setDoc(doc(db, "artifacts", "gire-sunny-asset-app", "public", "data", "shared_assets", "latest_status"), { dividend: summary }, { merge: true });
-                console.log("부부 현황판 업데이트 완료");
+                // 2. 모드(호스트1 or 호스트2)에 따라 분리된 문서(Document) 위치에 저장
+                const docName = appSettings.userMode === 'host1' ? "latest_status_host1" : "latest_status_host2";
+                
+                await setDoc(doc(db, "artifacts", "gire-sunny-asset-app", "public", "data", "shared_assets", docName), { dividend: summary }, { merge: true });
+                console.log(`부부 현황판(${docName}) 업데이트 완료`);
             } catch (e) { console.error("전송 실패:", e); }
         };
     </script>
